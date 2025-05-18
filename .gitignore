@@ -1,0 +1,66 @@
+# Bytecode files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment variables
+.env
+.env.*
+
+# VSCode
+.vscode/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Pytest cache
+.pytest_cache/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+
+# mypy
+.mypy_cache/
+
+# pyright
+pyrightconfig.json
+
+# pip
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Wheels
+*.whl
+
+# Distribution files
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+
+# Unit test / coverage
+.tox/
+.nox/
+.covera
+
+# Logs
+log/
+*.log
+
+# Test files
+test*
