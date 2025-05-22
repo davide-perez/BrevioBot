@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import subprocess
 from openai import OpenAI
-from config import Config
+from breviobot.core.config import Config
 from typing import Optional
 
 class SummarizerBase(ABC):

@@ -1,8 +1,8 @@
 import streamlit as st
 from datetime import datetime
-from state import AppState
-from config import Config
-from tts import TextToSpeech
+from breviobot.models.state import AppState
+from breviobot.core.config import Config
+from breviobot.utils.tts import TextToSpeech
 import logging
 
 class BrevioBotUI:

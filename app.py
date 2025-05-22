@@ -1,11 +1,11 @@
 import streamlit as st
 import logging
-from config import Config
-from state import AppState
-from summarizer import TextSummarizer
-from ui_components import BrevioBotUI
-from translations import UI
-from prompts import PROMPTS
+from breviobot.core.config import Config
+from breviobot.models.state import AppState
+from breviobot.core.summarizer import TextSummarizer
+from breviobot.ui.ui_components import BrevioBotUI
+from breviobot.utils.translations import UI
+from breviobot.utils.prompts import PROMPTS
 
 # Initialize configuration and state
 config = Config.load()
