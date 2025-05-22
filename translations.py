@@ -18,7 +18,10 @@ UI = {
         "error": "Errore durante il riassunto:",
         "spinner": "Generazione in corso...",
         "missing_api_key": "La variabile OPENAI_API_KEY non è impostata.",
-        "ollama_error_prefix": "Errore da Ollama:"
+        "ollama_error_prefix": "Errore da Ollama:",
+        "speak_summary": "Ascolta il riassunto",
+        "speak_input": "Ascolta il testo",
+        "tts_error": "Errore durante la sintesi vocale:"
     },
     "en": {
         "title": "Hi, I'm BrevioBot and I'm ready to summarize!",
@@ -39,6 +42,9 @@ UI = {
         "error": "Error during summarization:",
         "spinner": "Generating summary...",
         "missing_api_key": "The OPENAI_API_KEY environment variable is not set.",
-        "ollama_error_prefix": "Ollama error:"
+        "ollama_error_prefix": "Ollama error:",
+        "speak_summary": "Listen to summary",
+        "speak_input": "Listen to text",
+        "tts_error": "Text-to-speech error:"
     }
 }

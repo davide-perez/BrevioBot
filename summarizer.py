@@ -55,3 +55,5 @@ def summarize_with_ollama(prompt, model, lang):
     if result.returncode != 0:
         raise RuntimeError(f"{T['ollama_error_prefix']} {result.stderr.decode('utf-8')}")
     return result.stdout.decode("utf-8").strip()
+
+
