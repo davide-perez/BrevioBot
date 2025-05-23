@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Optional
-from breviobot.core.config import Config
-from breviobot.utils.translations import UI
+from config import Config
+from translations import UI
 
 @dataclass
 class AppState:

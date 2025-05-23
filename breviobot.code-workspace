@@ -1,0 +1,25 @@
+{
+  "folders": [
+    { "path": "breviobot-ui" },
+    { "path": "breviobot-service" }
+  ],
+  "settings": {
+    "python.pythonPath": "${workspaceFolder:breviobot-backend}/venv/bin/python"
+  },
+  "launch": {
+    "configurations": [
+      {
+        "name": "Run Backend",
+        "type": "debugpy",
+        "request": "launch",
+        "program": "${workspaceFolder:breviobot-service}/app.py"
+      },
+      {
+        "name": "Run UI",
+        "type": "debugpy",
+        "request": "launch",
+        "program": "${workspaceFolder:breviobot-ui}/app.py"
+      }
+    ]
+  }
+}
