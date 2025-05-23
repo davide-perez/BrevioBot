@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
 import subprocess
 from openai import OpenAI
-from breviobot.core.config import Config
-from typing import Optional
 
 class SummarizerBase(ABC):
     def __init__(self, system_prompt: str):
@@ -13,10 +11,9 @@ class SummarizerBase(ABC):
         pass
 
 class OllamaSummarizer(SummarizerBase):
-    def __init__(self, system_prompt: str, model: str, error_prefix: str):
+    def __init__(self, system_prompt: str, model: str):
         super().__init__(system_prompt)
         self.model = model
-        self.error_prefix = error_prefix
 
     def summarize(self, text: str) -> str:
         full_prompt = f"{self.system_prompt}\n\n{text}"
@@ -27,7 +24,7 @@ class OllamaSummarizer(SummarizerBase):
             stderr=subprocess.PIPE
         )
         if result.returncode != 0:
-            raise RuntimeError(f"{self.error_prefix} {result.stderr.decode('utf-8')}")
+            raise RuntimeError(f"Error in llama while summarizing: {result.stderr.decode('utf-8')}")
         return result.stdout.decode("utf-8").strip()
 
 class OpenAISummarizer(SummarizerBase):
@@ -49,31 +46,28 @@ class OpenAISummarizer(SummarizerBase):
 
 class SummarizerFactory:
     @staticmethod
-    def create_summarizer(model: str, system_prompt: str, config: Config, error_prefix: str) -> SummarizerBase:
+    def create_summarizer(model: str, system_prompt: str, openai_api_key: str, error_prefix: str) -> SummarizerBase:
         if model.startswith("gpt"):
-            if not config.OPENAI_API_KEY:
+            if not openai_api_key:
                 raise ValueError("OpenAI API key is not set")
-            return OpenAISummarizer(system_prompt, model, config.OPENAI_API_KEY)
+            return OpenAISummarizer(system_prompt, model, openai_api_key)
         else:
             return OllamaSummarizer(system_prompt, model, error_prefix)
 
 class TextSummarizer:
-    def __init__(self, config: Config, prompts: dict, translations: dict):
-        self.config = config
+    def __init__(self, openai_api_key: str, prompts: dict, error_prefix: str):
+        self.openai_api_key = openai_api_key
         self.prompts = prompts
-        self.translations = translations
+        self.error_prefix = error_prefix
 
     def summarize_text(self, text: str, model: str, lang: str) -> str:
         if lang not in self.prompts:
             raise ValueError(f"Prompt not available for language: {lang}")
-        if lang not in self.translations:
-            raise ValueError(f"Translations not available for language: {lang}")
-
+        
         system_prompt = self.prompts[lang]
-        error_prefix = self.translations[lang]["ollama_error_prefix"]
         
         summarizer = SummarizerFactory.create_summarizer(
-            model, system_prompt, self.config, error_prefix
+            model, system_prompt, self.openai_api_key, self.error_prefix
         )
         return summarizer.summarize(text)
 
