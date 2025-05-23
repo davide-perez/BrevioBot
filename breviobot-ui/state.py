@@ -18,7 +18,7 @@ class AppState:
         self.lang = self.config.DEFAULT_LANG
         self.model = self.config.DEFAULT_MODEL
         self.T = {}
-        self.set_translation(UI)  # Initialize translations with default language
+        self.set_translation(UI)
 
     def reset_audio(self):
         self.input_audio = None

@@ -46,19 +46,18 @@ class OpenAISummarizer(SummarizerBase):
 
 class SummarizerFactory:
     @staticmethod
-    def create_summarizer(model: str, system_prompt: str, openai_api_key: str, error_prefix: str) -> SummarizerBase:
+    def create_summarizer(model: str, system_prompt: str, openai_api_key: str) -> SummarizerBase:
         if model.startswith("gpt"):
             if not openai_api_key:
                 raise ValueError("OpenAI API key is not set")
             return OpenAISummarizer(system_prompt, model, openai_api_key)
         else:
-            return OllamaSummarizer(system_prompt, model, error_prefix)
+            return OllamaSummarizer(system_prompt, model)
 
 class TextSummarizer:
-    def __init__(self, openai_api_key: str, prompts: dict, error_prefix: str):
+    def __init__(self, openai_api_key: str, prompts: dict):
         self.openai_api_key = openai_api_key
         self.prompts = prompts
-        self.error_prefix = error_prefix
 
     def summarize_text(self, text: str, model: str, lang: str) -> str:
         if lang not in self.prompts:
@@ -67,7 +66,7 @@ class TextSummarizer:
         system_prompt = self.prompts[lang]
         
         summarizer = SummarizerFactory.create_summarizer(
-            model, system_prompt, self.openai_api_key, self.error_prefix
+            model, system_prompt, self.openai_api_key
         )
         return summarizer.summarize(text)
 

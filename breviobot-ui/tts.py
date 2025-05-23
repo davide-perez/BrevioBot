@@ -11,15 +11,6 @@ class TextToSpeech:
 
     @staticmethod
     def generate(text: str, lang_code: str) -> str:
-        """Convert text to speech using Google Text-to-Speech.
-        
-        Args:
-            text (str): The text to convert to speech
-            lang_code (str): Language code (it/en)
-        
-        Returns:
-            str: Path to the temporary audio file
-        """
         tts_lang = TextToSpeech.LANG_MAP.get(lang_code, "en")
         
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_file:
@@ -29,7 +20,6 @@ class TextToSpeech:
 
     @staticmethod
     def cleanup_file(file_path: str):
-        """Remove the temporary audio file after use."""
         try:
             os.unlink(file_path)
         except (OSError, FileNotFoundError):
