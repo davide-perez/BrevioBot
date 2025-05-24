@@ -8,6 +8,12 @@ import logging
 class BrevioBotUI:
     def __init__(self, state: AppState):
         self.state = state
+        if 'input_audio' not in st.session_state:
+            st.session_state.input_audio = None
+        if 'summary_audio' not in st.session_state:
+            st.session_state.summary_audio = None
+        if 'summary' not in st.session_state:
+            st.session_state.summary = None
 
     def setup_page(self):
         st.set_page_config(page_title="BrevioBot", layout="centered")
@@ -32,62 +38,64 @@ class BrevioBotUI:
         mode = st.radio(self.state.T["input_mode"], [self.state.T["upload"], self.state.T["manual"]])
         
         if mode == self.state.T["upload"]:
-            self._handle_file_upload()
+            uploaded_file = st.file_uploader(self.state.T["upload_label"], type="txt")
+            if uploaded_file:
+                self.state.current_text = uploaded_file.read().decode("utf-8")
+                self._display_text_tabs("upload_text", self.state.T["upload_label"])
         else:
-            self._handle_manual_input()
+            self._display_text_tabs("manual_text", self.state.T["text_label"])
 
-    def _handle_file_upload(self):
-        uploaded_file = st.file_uploader(self.state.T["upload_label"], type="txt")
-        if uploaded_file:
-            self.state.current_text = uploaded_file.read().decode("utf-8")
-            self._display_text_area("upload_text", self.state.T["upload_label"])
-
-    def _handle_manual_input(self):
-        self._display_text_area("manual_text", self.state.T["text_label"])
-
-    def _display_text_area(self, key: str, label: str):
-        col1, col2 = st.columns([4, 1])
-        with col1:
+    def _display_text_tabs(self, key: str, label: str):
+        tabs = st.tabs(["Text", "Audio"])
+        
+        with tabs[0]:
             self.state.current_text = st.text_area(label, self.state.current_text, height=200, key=key)
-        with col2:
+        
+        with tabs[1]:
             if st.button(self.state.T["speak_input"], key=f"speak_input_{key}"):
-                self._generate_audio(self.state.current_text, "input")
-            if self.state.input_audio is not None:
-                st.audio(self.state.input_audio, format="audio/mp3")
+                try:
+                    with st.spinner("Generating audio..."):
+                        audio_file = TextToSpeech.generate(self.state.current_text, self.state.lang)
+                        with open(audio_file, "rb") as f:
+                            st.session_state.input_audio = f.read()
+                        TextToSpeech.cleanup_file(audio_file)
+                except Exception as e:
+                    st.error(f"{self.state.T['tts_error']} {str(e)}")
+                    logging.error("Error during text-to-speech", exc_info=True)
+            
+            if st.session_state.input_audio is not None:
+                st.audio(st.session_state.input_audio, format="audio/mp3")
 
     def summary_section(self):
-        if self.state.summary is not None:
-            col1, col2 = st.columns([4, 1])
-            with col1:
-                st.text_area(self.state.T["result_label"], self.state.summary, height=150, key="summary_text")
-            with col2:
+        if st.session_state.summary is not None:
+            tabs = st.tabs(["Summary", "Audio"])
+            
+            with tabs[0]:
+                st.text_area(self.state.T["result_label"], st.session_state.summary, height=150, key="summary_text")
+                if st.checkbox(self.state.T["save_checkbox"]):
+                    self._handle_download()
+            
+            with tabs[1]:
                 if st.button(self.state.T["speak_summary"], key="speak_summary"):
-                    self._generate_audio(self.state.summary, "summary")
-                if self.state.summary_audio is not None:
-                    st.audio(self.state.summary_audio, format="audio/mp3")
-
-            if st.checkbox(self.state.T["save_checkbox"]):
-                self._handle_download()
+                    try:
+                        with st.spinner("Generating audio..."):
+                            audio_file = TextToSpeech.generate(st.session_state.summary, self.state.lang)
+                            with open(audio_file, "rb") as f:
+                                st.session_state.summary_audio = f.read()
+                            TextToSpeech.cleanup_file(audio_file)
+                    except Exception as e:
+                        st.error(f"{self.state.T['tts_error']} {str(e)}")
+                        logging.error("Error during text-to-speech", exc_info=True)
+                
+                if st.session_state.summary_audio is not None:
+                    st.audio(st.session_state.summary_audio, format="audio/mp3")
 
     def _handle_download(self):
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"riassunto_{timestamp}.txt"
         st.download_button(
             label=self.state.T["download"],
-            data=self.state.summary,
+            data=st.session_state.summary,
             file_name=filename,
             mime="text/plain"
         )
-
-    def _generate_audio(self, text: str, key_prefix: str):
-        try:
-            audio_file = TextToSpeech.generate(text, self.state.lang)
-            with open(audio_file, "rb") as f:
-                if key_prefix == "input":
-                    self.state.input_audio = f.read()
-                else:
-                    self.state.summary_audio = f.read()
-            TextToSpeech.cleanup_file(audio_file)
-        except Exception as e:
-            st.error(f"{self.state.T['tts_error']} {str(e)}")
-            logging.error("Error during text-to-speech", exc_info=True)

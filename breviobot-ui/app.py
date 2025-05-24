@@ -48,10 +48,12 @@ def main():
             try:
                 with st.spinner(state.T["spinner"]):
                     logging.info(f"Model used: {state.model} - Language: {state.lang}")
-                    state.summary = api_client.summarize(
+                    summary = api_client.summarize(
                         state.current_text, state.model, state.lang
                     )
-                    state.summary_audio = None
+                    state.summary = summary
+                    st.session_state.summary = summary
+                    st.session_state.summary_audio = None
                 st.success(state.T["success"])
             except Exception as e:
                 st.toast(f"{state.T['error']} {str(e)}")
