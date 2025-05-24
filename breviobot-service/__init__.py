@@ -1,4 +1,4 @@
 from .summarizer import TextSummarizer
-from .prompts import PROMPTS
+from .breviobot_service.core.prompts import PROMPTS
 
 __all__ = ['TextSummarizer', 'PROMPTS']

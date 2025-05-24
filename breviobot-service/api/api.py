@@ -5,19 +5,19 @@ from flask_cors import CORS
 from dataclasses import dataclass
 from typing import Optional
 
-from summarizer import TextSummarizer
-from prompts import PROMPTS
-from config import config
-from logger import logger
-from exceptions import BrevioBotError, ValidationError, RateLimitError
+from summarizer.text import TextSummarizer
+from core.prompts import PROMPTS
+from core.settings import settings
+from core.logger import logger
+from core.exceptions import BrevioBotError, ValidationError, RateLimitError
 
 app = Flask(__name__)
-CORS(app, origins=config.api.cors_origins)
+CORS(app, origins=settings.api.cors_origins)
 
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
-    default_limits=[f"{config.api.rate_limit} per minute"]
+    default_limits=[f"{settings.api.rate_limit} per minute"]
 )
 
 @dataclass
@@ -32,14 +32,14 @@ class SummarizeRequest:
         if not data.get("text"):
             raise ValidationError("Text field is required")
         
-        if len(data["text"]) > config.app.max_input_length:
-            raise ValidationError(f"Text exceeds maximum length of {config.app.max_input_length}")
+        if len(data["text"]) > settings.app.max_input_length:
+            raise ValidationError(f"Text exceeds maximum length of {settings.app.max_input_length}")
         
         return cls(
             text=data["text"],
-            language=data.get("language", config.app.default_language),
-            model=data.get("model", config.app.default_model),
-            openai_api_key=data.get("openai_api_key", config.app.openai_api_key)
+            language=data.get("language", settings.app.default_language),
+            model=data.get("model", settings.app.default_model),
+            openai_api_key=data.get("openai_api_key", settings.app.openai_api_key)
         )
 
 @app.errorhandler(BrevioBotError)
@@ -53,7 +53,7 @@ def handle_general_error(error):
     return jsonify({"error": "An unexpected error occurred"}), 500
 
 @app.route("/api/summarize", methods=["POST"])
-@limiter.limit(f"{config.api.rate_limit} per minute")
+@limiter.limit(f"{settings.api.rate_limit} per minute")
 def summarize():
     try:
         request_data = SummarizeRequest.from_json(request.json or {})

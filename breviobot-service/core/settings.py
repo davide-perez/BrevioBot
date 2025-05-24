@@ -4,7 +4,7 @@ from typing import Dict, Optional
 from dotenv import load_dotenv
 
 @dataclass
-class AppConfig:
+class AppSettings:
     openai_api_key: Optional[str]
     default_model: str
     default_language: str
@@ -13,17 +13,17 @@ class AppConfig:
     debug_mode: bool
 
 @dataclass
-class APIConfig:
+class APISettings:
     host: str
     port: int
     rate_limit: int
     cors_origins: list[str]
 
-class Config:
+class Settings:
     def __init__(self):
         load_dotenv()
         
-        self.app = AppConfig(
+        self.app = AppSettings(
             openai_api_key=os.getenv('OPENAI_API_KEY'),
             default_model=os.getenv('DEFAULT_MODEL', 'gpt-3.5-turbo'),
             default_language=os.getenv('DEFAULT_LANGUAGE', 'en'),
@@ -32,11 +32,11 @@ class Config:
             debug_mode=os.getenv('DEBUG_MODE', 'False').lower() == 'true'
         )
         
-        self.api = APIConfig(
+        self.api = APISettings(
             host=os.getenv('HOST', '0.0.0.0'),
             port=int(os.getenv('PORT', '8000')),
             rate_limit=int(os.getenv('RATE_LIMIT', '100')),
             cors_origins=os.getenv('CORS_ORIGINS', '*').split(',')
         )
 
-config = Config()
+settings = Settings()
