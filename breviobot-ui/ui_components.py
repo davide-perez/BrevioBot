@@ -47,7 +47,6 @@ class BrevioBotUI:
 
 
     def _display_text_tabs(self, key: str, label: str):
-        # Only render tabs for text input, no audio generation
         tabs = st.tabs(["Text"])
 
         with tabs[0]:
@@ -60,7 +59,6 @@ class BrevioBotUI:
         summary_audio_key = "summary_audio_data"
         trigger_key = "trigger_summary_audio"
 
-        # Handle TTS trigger before rendering tabs (prevents UI duplication)
         if st.session_state.get(trigger_key):
             try:
                 with st.spinner("Generating audio..."):
