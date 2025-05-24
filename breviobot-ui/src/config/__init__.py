@@ -1,0 +1,1 @@
+"""BrevioBot UI configuration module."""
