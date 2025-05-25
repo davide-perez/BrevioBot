@@ -1,4 +1,4 @@
 from api.routes import app, limiter
-from api.handlers import SummarizeRequest
+from api.handlers import SummarizeRequest, TranscribeRequest
 
-__all__ = ['app', 'limiter', 'SummarizeRequest']
+__all__ = ['app', 'limiter', 'SummarizeRequest', 'TranscribeRequest']

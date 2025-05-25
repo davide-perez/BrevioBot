@@ -19,6 +19,18 @@ class APISettings:
     rate_limit: int
     cors_origins: list[str]
 
+@dataclass
+class AudioSettings:
+    temp_dir: str
+    max_file_size: int
+    allowed_formats: list[str]
+
+@dataclass
+class WhisperSettings:
+    use_api: bool
+    model_size: str
+    openai_api_key: Optional[str] = None
+
 class Settings:
     def __init__(self):
         load_dotenv()
@@ -37,6 +49,18 @@ class Settings:
             port=int(os.getenv('PORT', '8000')),
             rate_limit=int(os.getenv('RATE_LIMIT', '100')),
             cors_origins=os.getenv('CORS_ORIGINS', '*').split(',')
+        )
+        
+        self.audio = AudioSettings(
+            temp_dir=os.getenv('AUDIO_TEMP_DIR', 'temp'),
+            max_file_size=int(os.getenv('AUDIO_MAX_FILE_SIZE', '25')),  # MB
+            allowed_formats=['mp3', 'wav', 'm4a', 'flac', 'ogg']
+        )
+        
+        self.whisper = WhisperSettings(
+            use_api=os.getenv('WHISPER_USE_API', 'True').lower() == 'true',
+            model_size=os.getenv('WHISPER_MODEL_SIZE', 'base'),
+            openai_api_key=os.getenv('OPENAI_API_KEY')
         )
 
 settings = Settings()
