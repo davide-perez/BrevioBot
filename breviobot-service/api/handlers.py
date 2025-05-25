@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Optional
 from werkzeug.datastructures import FileStorage
 
-from summarizer.text import TextSummarizer
+from text.summary_service import TextSummarizer
 from core.prompts import PROMPTS
 from core.settings import settings
 from core.logger import logger
