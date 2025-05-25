@@ -11,6 +11,7 @@ class AppSettings:
     max_input_length: int
     request_timeout: int
     debug_mode: bool
+    database_url: str
 
 @dataclass
 class APISettings:
@@ -46,9 +47,10 @@ class Settings:
             default_language=os.getenv('DEFAULT_LANGUAGE', 'en'),
             max_input_length=int(os.getenv('MAX_INPUT_LENGTH', '4000')),
             request_timeout=int(os.getenv('REQUEST_TIMEOUT', '30')),
-            debug_mode=os.getenv('DEBUG_MODE', 'False').lower() == 'true'
+            debug_mode=os.getenv('DEBUG_MODE', 'False').lower() == 'true',
+            database_url=os.getenv('DATABASE_URL', 'sqlite:///./breviobot.db')
         )
-        
+
         self.api = APISettings(
             host=os.getenv('HOST', '0.0.0.0'),
             port=int(os.getenv('PORT', '8000')),

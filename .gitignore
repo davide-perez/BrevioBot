@@ -67,3 +67,6 @@ test*
 
 #Temp files
 temp/
+
+#Db files
+*.db

@@ -130,3 +130,34 @@ def handle_transcribe_request(request_files, request_form):
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
+
+@require_auth
+def handle_create_user_request(user_data):
+    from core.users import User
+    from persistence.user_repository import UserRepository
+    from persistence.db_session import SessionLocal
+
+    if not user_data.get("username") or not user_data.get("email"):
+        raise ValidationError("Username and email are required fields")
+
+    db = SessionLocal()
+    repo = UserRepository(lambda: db)
+
+    existing_user = repo.get_by_username(user_data["username"])
+    if existing_user:
+        db.close()
+        raise ValidationError(f"User with username '{user_data['username']}' already exists")
+
+    user = User(
+        id=0,
+        username=user_data["username"],
+        email=user_data["email"],
+        full_name=user_data.get("full_name"),
+        is_active=True,
+        is_admin=user_data.get("is_admin", False),
+        hashed_password=user_data.get("hashed_password")
+    )
+
+    db_user = repo.create(user)
+    db.close()
+    return User.from_orm(db_user)
