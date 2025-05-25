@@ -30,6 +30,12 @@ class WhisperSettings:
     use_api: bool
     model_size: str
 
+@dataclass 
+class AuthSettings:
+    secret_key: str
+    token_expiry_hours: int
+    enable_auth: bool
+
 class Settings:
     def __init__(self):
         load_dotenv()
@@ -58,6 +64,12 @@ class Settings:
         self.whisper = WhisperSettings(
             use_api=os.getenv('WHISPER_USE_API', 'True').lower() == 'true',
             model_size=os.getenv('WHISPER_MODEL_SIZE', 'base')
+        )
+        
+        self.auth = AuthSettings(
+            secret_key=os.getenv('JWT_SECRET_KEY', 'temp'),
+            token_expiry_hours=int(os.getenv('JWT_EXPIRY_HOURS', '24')),
+            enable_auth=os.getenv('ENABLE_AUTH', 'true').lower() == 'true'
         )
 
     def validate_required_settings(self):

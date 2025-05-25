@@ -1,4 +1,4 @@
-from flask import jsonify
+from flask import jsonify, g
 from dataclasses import dataclass
 from typing import Optional
 from werkzeug.datastructures import FileStorage
@@ -8,6 +8,8 @@ from core.prompts import PROMPTS
 from core.settings import settings
 from core.logger import logger
 from core.exceptions import BrevioBotError, ValidationError, RateLimitError, ConfigurationError
+from auth.auth_service import require_auth
+from auth.auth_exceptions import AuthenticationError
 
 @dataclass
 class SummarizeRequest:
@@ -47,9 +49,7 @@ class TranscribeRequest:
         if not cls._allowed_audio_file(file.filename):
             allowed_formats = ", ".join(settings.audio.allowed_formats)
             raise ValidationError(f"File type not allowed. Supported formats: {allowed_formats}")
-        
-        # Check file size (FileStorage doesn't provide size directly, so we'll check during save)
-        
+                
         return cls(
             file=file,
             use_api=request_form.get("use_api", str(settings.whisper.use_api)).lower() == 'true',
@@ -69,14 +69,18 @@ def handle_general_error(error):
     logger.error(f"Unhandled unexpected error: {str(error)}", exc_info=True)
     return jsonify({"error": "An unexpected error occurred. Please check the logs for details."}), 500
 
+def handle_authentication_error(error):
+    logger.warning(f"Authentication error: {str(error)}")
+    return jsonify({"error": str(error)}), 401
+
+@require_auth
 def handle_summarize_request(request_json):
-    # Validate OpenAI configuration for GPT models
     request_data = SummarizeRequest.from_json(request_json or {})
     
     if request_data.model.startswith("gpt") and not settings.is_openai_configured():
         raise ConfigurationError("OpenAI API key not configured for GPT models")
-    
-    logger.info(f"Processing summarization request for language: {request_data.language}, model: {request_data.model}")
+    user_info = f" for user: {g.current_user['username']}" if hasattr(g, 'current_user') else ""
+    logger.info(f"Processing summarization request{user_info} for language: {request_data.language}, model: {request_data.model}")
     
     summarizer = TextSummarizer(settings.app.openai_api_key, PROMPTS)
     result = summarizer.summarize_text(
@@ -85,9 +89,10 @@ def handle_summarize_request(request_json):
         request_data.language
     )
     
-    logger.info("Successfully generated summary")
+    logger.info(f"Successfully generated summary{user_info}")
     return jsonify({"summary": result})
 
+@require_auth
 def handle_transcribe_request(request_files, request_form):
     import os
     from werkzeug.utils import secure_filename
@@ -95,11 +100,11 @@ def handle_transcribe_request(request_files, request_form):
     
     request_data = TranscribeRequest.from_request(request_files, request_form)
     
-    # Validate OpenAI configuration for API transcription
     if request_data.use_api and not settings.is_openai_configured():
         raise ConfigurationError("OpenAI API key not configured for Whisper API transcription")
     
-    logger.info(f"Processing transcription request - use_api: {request_data.use_api}, model_size: {request_data.model_size}")
+    user_info = f" for user: {g.current_user['username']}" if hasattr(g, 'current_user') else ""
+    logger.info(f"Processing transcription request{user_info} - use_api: {request_data.use_api}, model_size: {request_data.model_size}")
     
     filename = secure_filename(request_data.file.filename)
     temp_path = os.path.join(settings.audio.temp_dir, filename)
@@ -107,27 +112,21 @@ def handle_transcribe_request(request_files, request_form):
     os.makedirs(settings.audio.temp_dir, exist_ok=True)
     
     try:
-        # Save the file temporarily
         request_data.file.save(temp_path)
         
-        # Check file size after saving
         file_size_mb = os.path.getsize(temp_path) / (1024 * 1024)
         if file_size_mb > settings.audio.max_file_size:
             raise ValidationError(f"File size exceeds maximum limit of {settings.audio.max_file_size}MB")
         
-        # Create appropriate transcriber
         if request_data.use_api:
             transcriber = WhisperAPITranscriber()
         else:
             transcriber = WhisperLocalTranscriber(request_data.model_size)
-        
-        # Transcribe the audio
         text = transcriber.transcribe(temp_path)
         
-        logger.info("Successfully transcribed audio")
+        logger.info(f"Successfully transcribed audio{user_info}")
         return jsonify({"text": text})
         
     finally:
-        # Clean up temporary file
         if os.path.exists(temp_path):
             os.remove(temp_path)
