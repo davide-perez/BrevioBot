@@ -1,8 +1,5 @@
 from summarizer.text import TextSummarizer
-from summarizer.factory import SummarizerFactory
-from summarizer.base import SummarizerBase
-from summarizer.openai import OpenAISummarizer
-from summarizer.ollama import OllamaSummarizer
+from .summarization_services import SummarizerFactory, SummarizerBase, OpenAISummarizer, OllamaSummarizer
 
 __all__ = [
     'TextSummarizer',

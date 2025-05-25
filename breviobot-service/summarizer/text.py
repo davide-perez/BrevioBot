@@ -3,7 +3,7 @@ from typing import Optional
 from core.exceptions import ValidationError, ModelError
 from core.settings import settings
 from core.logger import logger
-from summarizer.factory import SummarizerFactory
+from .summarization_services import SummarizerFactory
 
 @dataclass
 class SummaryRequest:
