@@ -17,3 +17,7 @@ class RateLimitError(BrevioBotError):
 class ConfigurationError(BrevioBotError):
     """Raised when there's a configuration error"""
     pass
+
+class AuthenticationError(BrevioBotError):
+    """Raised when authentication fails"""
+    pass

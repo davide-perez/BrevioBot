@@ -23,7 +23,6 @@ class Config:
     default_lang: str
     default_model: str
     log_level: str
-    openai_api_key: str
     api_base_url: str
 
     @classmethod
@@ -34,6 +33,5 @@ class Config:
             default_lang=os.environ.get("DEFAULT_LANG", Settings.DEFAULT_LANG),
             default_model=os.environ.get("DEFAULT_MODEL", Settings.DEFAULT_MODEL),
             log_level=os.environ.get("LOG_LEVEL", Settings.LOG_LEVEL),
-            openai_api_key=os.environ.get("BREVIOBOT_OPENAI_API_KEY", ""),
             api_base_url=os.environ.get("API_BASE_URL", Settings.API_BASE_URL)
         )

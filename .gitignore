@@ -64,3 +64,6 @@ log/
 
 # Test files
 test*
+
+#Temp files
+temp/
