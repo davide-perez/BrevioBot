@@ -35,7 +35,7 @@ class Settings:
         load_dotenv()
         
         self.app = AppSettings(
-            openai_api_key=os.getenv('OPENAI_API_KEY'),
+            openai_api_key=os.getenv('BREVIOBOT_OPENAI_API_KEY'),
             default_model=os.getenv('DEFAULT_MODEL', 'gpt-3.5-turbo'),
             default_language=os.getenv('DEFAULT_LANGUAGE', 'en'),
             max_input_length=int(os.getenv('MAX_INPUT_LENGTH', '4000')),

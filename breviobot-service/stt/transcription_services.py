@@ -4,6 +4,7 @@ import openai
 from faster_whisper import WhisperModel
 from abc import ABC, abstractmethod
 from core.settings import settings
+from core.logger import logger
 
 class AbstractTranscriber(ABC):
     def __init__(self):
@@ -36,7 +37,6 @@ class WhisperLocalTranscriber(AbstractTranscriber):
                 if any(keyword in error_msg for keyword in ['cuda', 'cublas', 'cudnn', 'dll']):
                     print(f"CUDA library issue detected, trying next configuration...")
                 continue
-        
         if self.model is None:
             raise RuntimeError("Failed to initialize Whisper with any device configuration")
 
@@ -51,25 +51,15 @@ class WhisperLocalTranscriber(AbstractTranscriber):
         except Exception as e:
             error_msg = str(e).lower()
             if any(keyword in error_msg for keyword in ['cuda', 'cublas', 'cudnn', 'dll']):
-                print(f"CUDA runtime error during transcription: {e}")
-                print("Reinitializing with CPU fallback...")
+                logger.warning(f"CUDA runtime error during transcription: {e}")
+                logger.info("Reinitializing with CPU fallback...")
                 self.model = WhisperModel(self.model_size, device="cpu", compute_type="int8")
-                print("Reinitialized with CPU, retrying transcription...")
+                logger.info("Reinitialized with CPU, retrying transcription...")
                 segments, _ = self.model.transcribe(str(audio_path))
                 return " ".join([segment.text for segment in segments])
             else:
-                raise e
-        except Exception as e:
-            error_msg = str(e).lower()
-            if any(keyword in error_msg for keyword in ['cuda', 'cublas', 'cudnn', 'dll']):
-                print(f"CUDA runtime error during transcription: {e}")
-                print("Reinitializing with CPU fallback...")
-                self.model = WhisperModel(self.model.model_size_or_path, device="cpu", compute_type="int8")
-                print("Reinitialized with CPU, retrying transcription...")
-                segments, _ = self.model.transcribe(str(audio_path))
-                return " ".join([segment.text for segment in segments])
-            else:
-                raise e
+                logger.error(f"Error during local transcription: {e}", exc_info=True)
+                raise
 
 
 
@@ -78,7 +68,6 @@ class WhisperAPITranscriber(AbstractTranscriber):
         super().__init__()
         if not settings.is_openai_configured():
             raise ValueError("OpenAI API key not configured - set OPENAI_API_KEY environment variable")
-        
         self.api_key = settings.app.openai_api_key
         openai.api_key = self.api_key
 
@@ -87,6 +76,10 @@ class WhisperAPITranscriber(AbstractTranscriber):
         if not audio_path.exists():
             raise FileNotFoundError(f"Audio file not found: {audio_path}")
 
-        with open(audio_path, "rb") as audio_file:
-            result = openai.Audio.transcribe("whisper-1", audio_file)
-            return result["text"]
+        try:
+            with open(audio_path, "rb") as audio_file:
+                result = openai.Audio.transcribe("whisper-1", audio_file)
+                return result["text"]
+        except Exception as e:
+            logger.error(f"Error during API transcription: {e}", exc_info=True)
+            raise

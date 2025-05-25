@@ -62,12 +62,12 @@ class TranscribeRequest:
                filename.rsplit('.', 1)[1].lower() in settings.audio.allowed_formats
 
 def handle_breviobot_error(error):
-    logger.error(f"BrevioBotError: {str(error)}")
-    return jsonify({"error": str(error)}), 400
+    logger.error(f"Unhandled BrevioBotError: {str(error)}", exc_info=True)
+    return jsonify({"error": str(error)}), 500
 
 def handle_general_error(error):
-    logger.error(f"Unexpected error: {str(error)}", exc_info=True)
-    return jsonify({"error": "An unexpected error occurred"}), 500
+    logger.error(f"Unhandled unexpected error: {str(error)}", exc_info=True)
+    return jsonify({"error": "An unexpected error occurred. Please check the logs for details."}), 500
 
 def handle_summarize_request(request_json):
     # Validate OpenAI configuration for GPT models
