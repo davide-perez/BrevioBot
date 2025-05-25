@@ -7,14 +7,13 @@ from text.summary_service import TextSummarizer
 from core.prompts import PROMPTS
 from core.settings import settings
 from core.logger import logger
-from core.exceptions import BrevioBotError, ValidationError, RateLimitError
+from core.exceptions import BrevioBotError, ValidationError, RateLimitError, ConfigurationError
 
 @dataclass
 class SummarizeRequest:
     text: str
     language: str
     model: str
-    openai_api_key: Optional[str] = None
 
     @classmethod
     def from_json(cls, data: dict) -> 'SummarizeRequest':
@@ -27,8 +26,7 @@ class SummarizeRequest:
         return cls(
             text=data["text"],
             language=data.get("language", settings.app.default_language),
-            model=data.get("model", settings.app.default_model),
-            openai_api_key=data.get("openai_api_key", settings.app.openai_api_key)
+            model=data.get("model", settings.app.default_model)
         )
 
 @dataclass
@@ -36,7 +34,6 @@ class TranscribeRequest:
     file: FileStorage
     use_api: bool
     model_size: str
-    openai_api_key: Optional[str] = None
 
     @classmethod
     def from_request(cls, request_files, request_form) -> 'TranscribeRequest':
@@ -56,8 +53,7 @@ class TranscribeRequest:
         return cls(
             file=file,
             use_api=request_form.get("use_api", str(settings.whisper.use_api)).lower() == 'true',
-            model_size=request_form.get("model_size", settings.whisper.model_size),
-            openai_api_key=request_form.get("openai_api_key", settings.whisper.openai_api_key)
+            model_size=request_form.get("model_size", settings.whisper.model_size)
         )
     
     @staticmethod
@@ -74,10 +70,15 @@ def handle_general_error(error):
     return jsonify({"error": "An unexpected error occurred"}), 500
 
 def handle_summarize_request(request_json):
+    # Validate OpenAI configuration for GPT models
     request_data = SummarizeRequest.from_json(request_json or {})
+    
+    if request_data.model.startswith("gpt") and not settings.is_openai_configured():
+        raise ConfigurationError("OpenAI API key not configured for GPT models")
+    
     logger.info(f"Processing summarization request for language: {request_data.language}, model: {request_data.model}")
     
-    summarizer = TextSummarizer(request_data.openai_api_key, PROMPTS)
+    summarizer = TextSummarizer(settings.app.openai_api_key, PROMPTS)
     result = summarizer.summarize_text(
         request_data.text,
         request_data.model,
@@ -93,6 +94,11 @@ def handle_transcribe_request(request_files, request_form):
     from stt.transcription_services import WhisperAPITranscriber, WhisperLocalTranscriber
     
     request_data = TranscribeRequest.from_request(request_files, request_form)
+    
+    # Validate OpenAI configuration for API transcription
+    if request_data.use_api and not settings.is_openai_configured():
+        raise ConfigurationError("OpenAI API key not configured for Whisper API transcription")
+    
     logger.info(f"Processing transcription request - use_api: {request_data.use_api}, model_size: {request_data.model_size}")
     
     filename = secure_filename(request_data.file.filename)

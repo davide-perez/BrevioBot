@@ -3,6 +3,7 @@ from pathlib import Path
 import openai
 from faster_whisper import WhisperModel
 from abc import ABC, abstractmethod
+from core.settings import settings
 
 class AbstractTranscriber(ABC):
     def __init__(self):
@@ -75,9 +76,10 @@ class WhisperLocalTranscriber(AbstractTranscriber):
 class WhisperAPITranscriber(AbstractTranscriber):
     def __init__(self):
         super().__init__()
-        self.api_key = os.getenv("OPENAI_API_KEY")
-        if not self.api_key:
-            raise ValueError("OPENAI_API_KEY environment variable not set")
+        if not settings.is_openai_configured():
+            raise ValueError("OpenAI API key not configured - set OPENAI_API_KEY environment variable")
+        
+        self.api_key = settings.app.openai_api_key
         openai.api_key = self.api_key
 
     def transcribe(self, audio_path: str) -> str:

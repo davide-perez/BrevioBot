@@ -29,7 +29,6 @@ class AudioSettings:
 class WhisperSettings:
     use_api: bool
     model_size: str
-    openai_api_key: Optional[str] = None
 
 class Settings:
     def __init__(self):
@@ -54,13 +53,23 @@ class Settings:
         self.audio = AudioSettings(
             temp_dir=os.getenv('AUDIO_TEMP_DIR', 'temp'),
             max_file_size=int(os.getenv('AUDIO_MAX_FILE_SIZE', '25')),  # MB
-            allowed_formats=['mp3', 'wav', 'm4a', 'flac', 'ogg']
-        )
+            allowed_formats=['mp3', 'wav', 'm4a', 'flac', 'ogg']        )
         
         self.whisper = WhisperSettings(
             use_api=os.getenv('WHISPER_USE_API', 'True').lower() == 'true',
-            model_size=os.getenv('WHISPER_MODEL_SIZE', 'base'),
-            openai_api_key=os.getenv('OPENAI_API_KEY')
+            model_size=os.getenv('WHISPER_MODEL_SIZE', 'base')
         )
+
+    def validate_required_settings(self):
+        errors = []
+        
+        if not self.app.openai_api_key:
+            errors.append("OPENAI_API_KEY environment variable is required")
+            
+        if errors:
+            raise ValueError("Configuration errors: " + "; ".join(errors))
+    
+    def is_openai_configured(self) -> bool:
+        return bool(self.app.openai_api_key)
 
 settings = Settings()
