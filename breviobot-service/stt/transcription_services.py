@@ -16,15 +16,59 @@ class AbstractTranscriber(ABC):
 class WhisperLocalTranscriber(AbstractTranscriber):
     def __init__(self, model_size="base"):
         super().__init__()
-        self.model = WhisperModel(model_size, device="auto", compute_type="auto")
+
+        device_configs = [
+            ("cuda", "float16"),
+            ("cpu", "int8")
+        ]
+        
+        self.model = None
+        self.model_size = model_size
+        for device, compute_type in device_configs:
+            try:
+                self.model = WhisperModel(model_size, device=device, compute_type=compute_type)
+                print(f"Whisper initialized with {device.upper()} acceleration ({compute_type})")
+                break
+            except Exception as e:
+                print(f"Failed to initialize with {device}: {str(e)}")
+                error_msg = str(e).lower()
+                if any(keyword in error_msg for keyword in ['cuda', 'cublas', 'cudnn', 'dll']):
+                    print(f"CUDA library issue detected, trying next configuration...")
+                continue
+        
+        if self.model is None:
+            raise RuntimeError("Failed to initialize Whisper with any device configuration")
 
     def transcribe(self, audio_path: str) -> str:
         audio_path = Path(audio_path)
         if not audio_path.exists():
             raise FileNotFoundError(f"Audio file not found: {audio_path}")
 
-        segments, _ = self.model.transcribe(str(audio_path))
-        return " ".join([segment.text for segment in segments])
+        try:
+            segments, _ = self.model.transcribe(str(audio_path))
+            return " ".join([segment.text for segment in segments])
+        except Exception as e:
+            error_msg = str(e).lower()
+            if any(keyword in error_msg for keyword in ['cuda', 'cublas', 'cudnn', 'dll']):
+                print(f"CUDA runtime error during transcription: {e}")
+                print("Reinitializing with CPU fallback...")
+                self.model = WhisperModel(self.model_size, device="cpu", compute_type="int8")
+                print("Reinitialized with CPU, retrying transcription...")
+                segments, _ = self.model.transcribe(str(audio_path))
+                return " ".join([segment.text for segment in segments])
+            else:
+                raise e
+        except Exception as e:
+            error_msg = str(e).lower()
+            if any(keyword in error_msg for keyword in ['cuda', 'cublas', 'cudnn', 'dll']):
+                print(f"CUDA runtime error during transcription: {e}")
+                print("Reinitializing with CPU fallback...")
+                self.model = WhisperModel(self.model.model_size_or_path, device="cpu", compute_type="int8")
+                print("Reinitialized with CPU, retrying transcription...")
+                segments, _ = self.model.transcribe(str(audio_path))
+                return " ".join([segment.text for segment in segments])
+            else:
+                raise e
 
 
 
