@@ -1,0 +1,28 @@
+"""BrevioBot UI configuration module."""
+
+__all__ = [
+    "alerts",
+    "api",
+    "assets",
+    "auth",
+    "billing",
+    "bots",
+    "channels",
+    "config",
+    "conversations",
+    "customizations",
+    "data",
+    "integrations",
+    "intents",
+    "jobs",
+    "logs",
+    "members",
+    "messages",
+    "permissions",
+    "reports",
+    "roles",
+    "settings",
+    "snippets",
+    "templates",
+    "users",
+]

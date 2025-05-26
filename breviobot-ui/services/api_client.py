@@ -1,27 +1,14 @@
-from typing import Optional
+from config.settings import Settings
 import requests
 import logging
-from .base import BaseService
-from ..config.settings import Settings
 
-class ApiClient(BaseService):
-    """Client for interacting with the BrevioBot API."""
+class ApiClientBase:
+    def __init__(self, config):
+        self.config = config
 
+
+class ApiClient(ApiClientBase):
     def summarize(self, text: str, model: str, language: str) -> str:
-        """
-        Request text summarization from the API.
-        
-        Args:
-            text: The text to summarize
-            model: The AI model to use
-            language: The target language
-
-        Returns:
-            str: The generated summary
-
-        Raises:
-            RuntimeError: If the API request fails
-        """
         if model not in Settings.SUPPORTED_MODELS:
             raise ValueError(f"Unsupported model: {model}")
         if language not in Settings.SUPPORTED_LANGUAGES:
