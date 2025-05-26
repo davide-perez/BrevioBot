@@ -7,9 +7,8 @@ from text.summary_service import TextSummarizer
 from core.prompts import PROMPTS
 from core.settings import settings
 from core.logger import logger
-from core.exceptions import BrevioBotError, ValidationError, RateLimitError, ConfigurationError
-from auth.auth_service import require_auth
-from auth.auth_exceptions import AuthenticationError
+from core.exceptions import ValidationError, RateLimitError, ConfigurationError
+from auth.auth_service import require_auth, AuthService
 from sqlalchemy.exc import IntegrityError
 import re
 
@@ -176,3 +175,37 @@ def handle_create_user_request(user_data):
             raise ValidationError("A user with the provided information already exists")
     finally:
         db.close()
+
+def handle_login_request(login_data):
+    from persistence.user_repository import UserRepository
+    from persistence.db_session import SessionLocal
+    import bcrypt
+    from core.users import User
+    from core.exceptions import ValidationError
+    from auth.auth_service import create_access_token  # <-- Import your JWT utility
+
+    username = login_data.get("username")
+    password = login_data.get("password")
+    if not username or not password:
+        raise ValidationError("Username and password are required")
+
+    db = SessionLocal()
+    repo = UserRepository(lambda: db)
+    user_db = repo.get_by_username(username)
+    if not user_db:
+        db.close()
+        raise ValidationError("Invalid username or password")
+
+    if not bcrypt.checkpw(password.encode("utf-8"), user_db.hashed_password.encode("utf-8")):
+        db.close()
+        raise ValidationError("Invalid username or password")
+
+    user = User.model_validate(user_db)
+    db.close()
+    auth_service = AuthService()
+    access_token = auth_service.generate_token({"user_id": user.id, "username": user.username})
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": user.model_dump()
+    }

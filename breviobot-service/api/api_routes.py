@@ -12,9 +12,9 @@ from .api_handlers import (
     handle_transcribe_request,
     handle_authentication_error,
     handle_create_user_request,
+    handle_login_request,
 )
 from auth.auth_handlers import (
-    handle_login_request, 
     handle_refresh_token_request, 
     handle_logout_request, 
     handle_me_request
@@ -42,8 +42,6 @@ app.errorhandler(Exception)(handle_general_error)
 def login():
     try:
         return handle_login_request(request.get_json())
-    except (ValidationError, AuthenticationError) as e:
-        return handle_authentication_error(e)
     except Exception as e:
         logger.error(f"Login error: {str(e)}", exc_info=True)
         return {"error": "Login failed"}, 500
@@ -124,6 +122,8 @@ def health():
     return {"status": "healthy"}, 200
 
 # User
+
+
 @app.route("/api/users", methods=["GET"])
 @limiter.limit(f"{settings.api.rate_limit} per minute")
 def get_users():
