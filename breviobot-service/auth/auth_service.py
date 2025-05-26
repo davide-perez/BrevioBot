@@ -76,33 +76,28 @@ def require_auth(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         auth_service = AuthService()
-        
         if not auth_service.enable_auth:
-            g.current_user = {"username": "anonymous", "user_id": "anonymous"}
+            g.current_user = {"role": "anonymous", "username": "anonymous", "user_id": 0}
             return f(*args, **kwargs)
-        
         try:
             token = auth_service.get_token_from_request()
             if not token:
                 return jsonify({"error": "Authentication token required"}), 401
-            
             payload = auth_service.verify_token(token)
-            
             from persistence.user_repository import UserRepository
             from persistence.db_session import SessionLocal
             db = SessionLocal()
-            repo = UserRepository(lambda: db)
-            user_db = repo.get_by_username(payload.get("username"))
-            db.close()
-            if not user_db or not getattr(user_db, "is_active", True):
-                return jsonify({"error": "User not found or inactive"}), 401
-
-            g.current_user = payload
-            
+            try:
+                repo = UserRepository(lambda: db)
+                user_db = repo.get_by_username(payload.get("username"))
+                if not user_db or not getattr(user_db, "is_active", True):
+                    return jsonify({"error": "User not found or inactive"}), 401
+                g.current_user = payload
+            finally:
+                db.close()
         except AuthenticationError as e:
             logger.warning(f"Authentication failed: {str(e)}")
             return jsonify({"error": str(e)}), 401
-        
         return f(*args, **kwargs)
     return decorated_function
 
@@ -117,9 +112,9 @@ def optional_auth(f):
                 payload = auth_service.verify_token(token)
                 g.current_user = payload
             else:
-                g.current_user = {"username": "anonymous", "user_id": "anonymous"}
+                g.current_user = {"role": "anonymous", "username": "anonymous", "user_id": 0}
         except AuthenticationError:
-            g.current_user = {"username": "anonymous", "user_id": "anonymous"}
+            g.current_user = {"role": "anonymous", "username": "anonymous", "user_id": 0}
         
         return f(*args, **kwargs)
     return decorated_function
