@@ -12,12 +12,4 @@ setup(
         "typing-extensions>=4.5.0"
     ],
     python_requires=">=3.9",
-    package_data={
-        "breviobot_ui": ["py.typed"]
-    },
-    entry_points={
-        "console_scripts": [
-            "breviobot-ui=src.app:main",
-        ],
-    },
 )

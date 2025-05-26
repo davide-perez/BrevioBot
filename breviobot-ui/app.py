@@ -1,7 +1,7 @@
 import streamlit as st
 import logging
 from pathlib import Path
-from config.settings import Config, Settings
+from config.settings import AppSettings, AppDefaultSettings
 from models.state import AppState
 from ui.components import BrevioBotUI
 from services.api_client import ApiClient
@@ -10,18 +10,19 @@ from translations import UI
 
 
 def setup_logging() -> None:
-    log_dir = Settings.LOG_DIR
+    log_dir = AppDefaultSettings.LOG_DIR
     log_dir.mkdir(exist_ok=True)
+    log_level = getattr(logging, AppSettings.load().log_level.upper(), logging.ERROR)
     logging.basicConfig(
         filename=log_dir / "breviobot.log",
-        level=Settings.LOG_LEVEL,
+        level=log_level,
         format="%(asctime)s - %(levelname)s - %(message)s"
     )
 
 
 def main() -> None:
     setup_logging()
-    config = Config.load()
+    config = AppSettings.load()
     state = AppState(config)
     state.set_translations(UI)
     api_client = ApiClient(config)

@@ -1,10 +1,10 @@
 from dataclasses import dataclass, field
 from typing import Optional, Dict, Any
-from config.settings import Config, Settings
+from config.settings import AppSettings, AppDefaultSettings
 
 @dataclass
 class AppState:
-    config: Config
+    config: AppSettings
     current_text: str = ""
     summary: Optional[str] = None
     input_audio: Optional[bytes] = None
@@ -33,13 +33,13 @@ class AppState:
         self._update_active_translation()
 
     def set_language(self, lang: str) -> None:
-        if lang not in Settings.SUPPORTED_LANGUAGES:
+        if lang not in AppDefaultSettings.SUPPORTED_LANGUAGES:
             raise ValueError(f"Unsupported language: {lang}")
         self.lang = lang
         self._update_active_translation()
 
     def set_model(self, model: str) -> None:
-        if model not in Settings.SUPPORTED_MODELS:
+        if model not in AppDefaultSettings.SUPPORTED_MODELS:
             raise ValueError(f"Unsupported model: {model}")
         self.model = model
 

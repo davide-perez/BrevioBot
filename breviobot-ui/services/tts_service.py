@@ -3,7 +3,7 @@ from gtts import gTTS
 import os
 import tempfile
 from pathlib import Path
-from config.settings import Settings
+from config.settings import AppDefaultSettings
 
 
 class TextToSpeechServiceBase:
@@ -17,7 +17,7 @@ class TextToSpeechService(TextToSpeechServiceBase):
         "en": "en"
     }
     def generate(self, text: str, lang_code: str) -> str:
-        if lang_code not in Settings.SUPPORTED_LANGUAGES:
+        if lang_code not in AppDefaultSettings.SUPPORTED_LANGUAGES:
             raise ValueError(f"Unsupported language: {lang_code}")
         tts_lang = self.LANG_MAP.get(lang_code, "en")
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_file:

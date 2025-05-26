@@ -3,7 +3,7 @@ import streamlit as st
 from typing import Tuple, Optional
 from models.state import AppState
 from services.tts_service import TextToSpeechService
-from config.settings import Settings
+from config.settings import AppDefaultSettings
 import logging
 
 class BrevioBotUI:
@@ -27,15 +27,15 @@ class BrevioBotUI:
     def language_selector(self) -> str:
         return st.selectbox(
             "Lingua / Language",
-            Settings.SUPPORTED_LANGUAGES,
-            index=Settings.SUPPORTED_LANGUAGES.index(self.state.lang)
+            AppDefaultSettings.SUPPORTED_LANGUAGES,
+            index=AppDefaultSettings.SUPPORTED_LANGUAGES.index(self.state.lang)
         )
 
     def model_selector(self) -> str:
         return st.selectbox(
             self.state.T["model_label"],
-            Settings.SUPPORTED_MODELS,
-            index=Settings.SUPPORTED_MODELS.index(self.state.model)
+            AppDefaultSettings.SUPPORTED_MODELS,
+            index=AppDefaultSettings.SUPPORTED_MODELS.index(self.state.model)
         )
 
     def text_input_section(self) -> None:

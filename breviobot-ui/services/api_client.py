@@ -1,4 +1,4 @@
-from config.settings import Settings
+from config.settings import AppDefaultSettings
 import requests
 import logging
 
@@ -9,9 +9,9 @@ class ApiClientBase:
 
 class ApiClient(ApiClientBase):
     def summarize(self, text: str, model: str, language: str) -> str:
-        if model not in Settings.SUPPORTED_MODELS:
+        if model not in AppDefaultSettings.SUPPORTED_MODELS:
             raise ValueError(f"Unsupported model: {model}")
-        if language not in Settings.SUPPORTED_LANGUAGES:
+        if language not in AppDefaultSettings.SUPPORTED_LANGUAGES:
             raise ValueError(f"Unsupported language: {language}")
 
         try:
