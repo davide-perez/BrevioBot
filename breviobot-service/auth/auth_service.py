@@ -11,11 +11,13 @@ from .auth_exceptions import AuthenticationError, TokenExpiredError, InvalidToke
 
 class AuthService:
     def __init__(self) -> None:
-        self.secret_key = os.getenv("BREVIOBOT_JWT_SECRET_KEY", "RTipVZUjZPfaMcMMfEHzLyDFcTUNJ_DADAr0A3JKoBlBFMHaN_inaCNihAe9yCP1l8q6Vaf_ajVCTqDKpRr-LQ")
+        self.secret_key = os.getenv("BREVIOBOT_JWT_SECRET_KEY", "")
+        if not self.secret_key:
+            raise ValueError("BREVIOBOT_JWT_SECRET_KEY environment variable must be set")
         self.algorithm = "HS256"
         self.token_expiry_hours = int(os.getenv("BREVIOBOT_JWT_EXPIRY_HOURS", "24"))
         self.enable_auth = os.getenv("BREVIOBOT_ENABLE_AUTH", "true").lower() == "true"
-    
+
     def generate_token(self, user_data: Dict) -> str:
         payload = {
             'user_id': user_data.get('user_id'),
