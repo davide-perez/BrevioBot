@@ -177,35 +177,24 @@ def handle_create_user_request(user_data):
         db.close()
 
 def handle_login_request(login_data):
-    from persistence.user_repository import UserRepository
-    from persistence.db_session import SessionLocal
-    import bcrypt
-    from core.users import User
     from core.exceptions import ValidationError
-    from auth.auth_service import create_access_token  # <-- Import your JWT utility
+    from core.users import User
+    from auth.auth_service import AuthService
 
     username = login_data.get("username")
     password = login_data.get("password")
     if not username or not password:
         raise ValidationError("Username and password are required")
 
-    db = SessionLocal()
-    repo = UserRepository(lambda: db)
-    user_db = repo.get_by_username(username)
-    if not user_db:
-        db.close()
-        raise ValidationError("Invalid username or password")
-
-    if not bcrypt.checkpw(password.encode("utf-8"), user_db.hashed_password.encode("utf-8")):
-        db.close()
-        raise ValidationError("Invalid username or password")
-
-    user = User.model_validate(user_db)
-    db.close()
     auth_service = AuthService()
-    access_token = auth_service.generate_token({"user_id": user.id, "username": user.username})
+    try:
+        user_info = auth_service.authenticate_user(username, password)
+    except Exception as e:
+        raise ValidationError("Invalid username or password")
+
+    access_token = auth_service.generate_token({"user_id": user_info["user_id"], "username": user_info["username"]})
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "user": user.model_dump()
+        "user": user_info
     }

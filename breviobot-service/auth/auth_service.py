@@ -47,33 +47,30 @@ class AuthService:
         return None
     
     def authenticate_user(self, username: str, password: str) -> Dict:
-        valid_users = {
-            "admin": {
-                "password_hash": self.hash_password("admin123"),
-                "user_id": "1",
-                "role": "admin"
-            },
-            "user": {
-                "password_hash": self.hash_password("user123"),
-                "user_id": "2", 
-                "role": "user"
-            }
-        }
-        
-        if username not in valid_users:
+        from persistence.user_repository import UserRepository
+        from persistence.db_session import SessionLocal
+        import bcrypt
+
+        db = SessionLocal()
+        repo = UserRepository(lambda: db)
+        user_db = repo.get_by_username(username)
+        if not user_db:
+            db.close()
             logger.warning(f"Login attempt with invalid username: {username}")
             raise InvalidCredentialsError("Invalid credentials")
-        
-        user_info = valid_users[username]
-        if not self.verify_password(password, user_info["password_hash"]):
+
+        if not bcrypt.checkpw(password.encode("utf-8"), user_db.hashed_password.encode("utf-8")):
+            db.close()
             logger.warning(f"Login attempt with invalid password for user: {username}")
             raise InvalidCredentialsError("Invalid credentials")
-        
-        return {
-            "user_id": user_info["user_id"],
-            "username": username,
-            "role": user_info["role"]
+
+        user_info = {
+            "user_id": user_db.id,
+            "username": user_db.username,
+            "role": "admin" if getattr(user_db, "is_admin", False) else "user"
         }
+        db.close()
+        return user_info
 
 def require_auth(f):
     @wraps(f)
