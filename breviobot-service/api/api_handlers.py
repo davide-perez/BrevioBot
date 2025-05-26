@@ -160,4 +160,4 @@ def handle_create_user_request(user_data):
 
     db_user = repo.create(user)
     db.close()
-    return User.from_orm(db_user)
+    return User.model_validate(db_user)

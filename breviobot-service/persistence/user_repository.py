@@ -22,3 +22,22 @@ class UserRepository:
             return db_user
         finally:
             db.close()
+
+    def get_by_field(self, field_name, value):
+        db = self.db_session_factory()
+        try:
+            field = getattr(UserDB, field_name, None)
+            if field is None:
+                raise ValueError(f"UserDB has no field '{field_name}'")
+            return db.query(UserDB).filter(field == value).first()
+        finally:
+            db.close()
+
+    def get_by_id(self, user_id):
+        return self.get_by_field("id", user_id)
+
+    def get_by_username(self, username):
+        return self.get_by_field("username", username)
+
+    def get_by_email(self, email):
+        return self.get_by_field("email", email)
