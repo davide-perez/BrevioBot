@@ -7,9 +7,10 @@ from text.summary_service import TextSummarizer
 from core.prompts import PROMPTS
 from core.settings import settings
 from core.logger import logger
-from core.exceptions import BrevioBotError, ValidationError, RateLimitError, ConfigurationError
-from auth.auth_service import require_auth
-from auth.auth_exceptions import AuthenticationError
+from core.exceptions import ValidationError, RateLimitError, ConfigurationError
+from auth.auth_service import require_auth, AuthService
+from sqlalchemy.exc import IntegrityError
+import re
 
 @dataclass
 class SummarizeRequest:
@@ -130,3 +131,79 @@ def handle_transcribe_request(request_files, request_form):
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
+
+def handle_create_user_request(user_data):
+    from core.users import User
+    from persistence.user_repository import UserRepository
+    from persistence.db_session import SessionLocal
+
+    if not user_data.get("username") or not user_data.get("email"):
+        raise ValidationError("Username and email are required fields")
+    if not user_data.get("password"):
+        raise ValidationError("Password is required")
+
+    db = SessionLocal()
+    repo = UserRepository(lambda: db)
+
+    existing_user = repo.get_by_username(user_data["username"])
+    if existing_user:
+        db.close()
+        raise ValidationError(f"User with username '{user_data['username']}' already exists")
+
+    user = User(
+        id=0,
+        username=user_data["username"],
+        email=user_data["email"],
+        full_name=user_data.get("full_name"),
+        is_active=True,
+        is_admin=user_data.get("is_admin", False),
+        password=user_data["password"]
+    )
+
+    try:
+        db_user = repo.create(user)
+        user_dict = User.model_validate(db_user).model_dump()
+        return {
+            "username": user_dict["username"],
+            "email": user_dict["email"],
+            "role": "admin" if user_dict.get("is_admin") else "user"
+        }
+    except IntegrityError as e:
+        db.rollback()
+        import re
+        msg = str(e.orig).lower()
+        match = re.search(r'unique constraint failed: [\w]+\.([a-z_]+)', msg)
+        if match:
+            field = match.group(1)
+            raise ValidationError(f"A user with this {field} already exists")
+        else:
+            raise ValidationError("A user with the provided information already exists")
+    finally:
+        db.close()
+
+def handle_login_request(login_data):
+    from core.exceptions import ValidationError
+    from core.users import User
+    from auth.auth_service import AuthService
+
+    username = login_data.get("username")
+    password = login_data.get("password")
+    if not username or not password:
+        raise ValidationError("Username and password are required")
+
+    auth_service = AuthService()
+    try:
+        user_info = auth_service.authenticate_user(username, password)
+    except Exception as e:
+        raise ValidationError("Invalid username or password")
+
+    access_token = auth_service.generate_token({"user_id": user_info["user_id"], "username": user_info["username"]})
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "username": user_info["username"],
+            "email": user_info.get("email"),
+            "role": user_info["role"]
+        }
+    }

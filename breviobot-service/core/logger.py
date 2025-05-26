@@ -3,7 +3,7 @@ import sys
 from logging.handlers import RotatingFileHandler
 from typing import Optional
 
-def setup_logger(name: str, log_file: Optional[str] = None, level=logging.INFO) -> logging.Logger:
+def setup_logger(name: str, log_file: Optional[str] = None, level: int = logging.INFO) -> logging.Logger:
     logger = logging.getLogger(name)
     logger.setLevel(level)
     
