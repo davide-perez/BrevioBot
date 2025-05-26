@@ -163,7 +163,12 @@ def handle_create_user_request(user_data):
 
     try:
         db_user = repo.create(user)
-        return User.model_validate(db_user).model_dump()
+        user_dict = User.model_validate(db_user).model_dump()
+        return {
+            "username": user_dict["username"],
+            "email": user_dict["email"],
+            "role": "admin" if user_dict.get("is_admin") else "user"
+        }
     except IntegrityError as e:
         db.rollback()
         import re
@@ -197,5 +202,9 @@ def handle_login_request(login_data):
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "user": user_info
+        "user": {
+            "username": user_info["username"],
+            "email": user_info.get("email"),
+            "role": user_info["role"]
+        }
     }

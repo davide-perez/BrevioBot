@@ -67,6 +67,7 @@ class AuthService:
         user_info = {
             "user_id": user_db.id,
             "username": user_db.username,
+            "email": user_db.email,
             "role": "admin" if getattr(user_db, "is_admin", False) else "user"
         }
         db.close()
@@ -77,7 +78,7 @@ def require_auth(f):
     def decorated_function(*args, **kwargs):
         auth_service = AuthService()
         if not auth_service.enable_auth:
-            g.current_user = {"role": "anonymous", "username": "anonymous", "user_id": 0}
+            g.current_user = {"role": "anonymous", "username": "anonymous"}
             return f(*args, **kwargs)
         try:
             token = auth_service.get_token_from_request()
@@ -92,7 +93,10 @@ def require_auth(f):
                 user_db = repo.get_by_username(payload.get("username"))
                 if not user_db or not getattr(user_db, "is_active", True):
                     return jsonify({"error": "User not found or inactive"}), 401
-                g.current_user = payload
+                g.current_user = {
+                    "username": user_db.username,
+                    "role": "admin" if getattr(user_db, "is_admin", False) else "user"
+                }
             finally:
                 db.close()
         except AuthenticationError as e:
@@ -105,16 +109,28 @@ def optional_auth(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         auth_service = AuthService()
-        
         try:
             token = auth_service.get_token_from_request()
             if token:
                 payload = auth_service.verify_token(token)
-                g.current_user = payload
+                from persistence.user_repository import UserRepository
+                from persistence.db_session import SessionLocal
+                db = SessionLocal()
+                try:
+                    repo = UserRepository(lambda: db)
+                    user_db = repo.get_by_username(payload.get("username"))
+                    if user_db and getattr(user_db, "is_active", True):
+                        g.current_user = {
+                            "username": user_db.username,
+                            "role": "admin" if getattr(user_db, "is_admin", False) else "user"
+                        }
+                    else:
+                        g.current_user = {"role": "anonymous", "username": "anonymous"}
+                finally:
+                    db.close()
             else:
-                g.current_user = {"role": "anonymous", "username": "anonymous", "user_id": 0}
+                g.current_user = {"role": "anonymous", "username": "anonymous"}
         except AuthenticationError:
-            g.current_user = {"role": "anonymous", "username": "anonymous", "user_id": 0}
-        
+            g.current_user = {"role": "anonymous", "username": "anonymous"}
         return f(*args, **kwargs)
     return decorated_function
