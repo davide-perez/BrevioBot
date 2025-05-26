@@ -158,7 +158,7 @@ def handle_create_user_request(user_data):
         full_name=user_data.get("full_name"),
         is_active=True,
         is_admin=user_data.get("is_admin", False),
-        hashed_password=user_data["password"]
+        password=user_data["password"]
     )
 
     try:

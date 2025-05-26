@@ -12,4 +12,4 @@ class UserDB(Base):
     full_name = Column(String, nullable=True)
     is_active = Column(Boolean, default=True)
     is_admin = Column(Boolean, default=False)
-    hashed_password = Column(String, nullable=True)
+    password = Column(String, nullable=True)

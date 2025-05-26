@@ -59,7 +59,7 @@ class AuthService:
             logger.warning(f"Login attempt with invalid username: {username}")
             raise InvalidCredentialsError("Invalid credentials")
 
-        if not bcrypt.checkpw(password.encode("utf-8"), user_db.hashed_password.encode("utf-8")):
+        if not bcrypt.checkpw(password.encode("utf-8"), user_db.password.encode("utf-8")):
             db.close()
             logger.warning(f"Login attempt with invalid password for user: {username}")
             raise InvalidCredentialsError("Invalid credentials")

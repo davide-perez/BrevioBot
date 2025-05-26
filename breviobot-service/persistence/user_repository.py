@@ -9,14 +9,14 @@ class UserRepository:
     def create(self, user):
         db = self.db_session_factory()
         try:
-            hashed_password = bcrypt.hashpw(user.hashed_password.encode('utf-8'), bcrypt.gensalt())
+            hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt())
             db_user = UserDB(
                 username=user.username,
                 email=user.email,
                 full_name=user.full_name,
                 is_active=user.is_active,
                 is_admin=user.is_admin,
-                hashed_password=hashed_password.decode('utf-8')
+                password=hashed_password.decode('utf-8')
             )
             db.add(db_user)
             db.commit()
@@ -51,7 +51,7 @@ class UserRepository:
             if not user:
                 return None
             import bcrypt
-            if bcrypt.checkpw(password.encode('utf-8'), user.hashed_password.encode('utf-8')):
+            if bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
                 return user
             return None
         finally:

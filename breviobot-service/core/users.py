@@ -8,7 +8,7 @@ class User(BaseModel):
     full_name: Optional[str] = None
     is_active: bool = True
     is_admin: bool = False
-    hashed_password: Optional[str] = None
+    password: Optional[str] = None
 
     def __str__(self):
         return f"User(id={self.id}, username='{self.username}', email='{self.email}')"
