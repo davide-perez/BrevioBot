@@ -79,6 +79,7 @@ def me():
 # Service routes
 @app.route("/api/summarize", methods=["POST"])
 @limiter.limit(f"{settings.api.rate_limit} per minute")
+@require_auth
 def summarize():
     try:
         return handle_summarize_request(request.json)
@@ -99,6 +100,7 @@ def summarize():
 
 @app.route("/api/transcribe", methods=["POST"])
 @limiter.limit(f"{settings.api.rate_limit} per minute")
+@require_auth
 def transcribe():
     try:
         return handle_transcribe_request(request.files, request.form)

@@ -140,6 +140,8 @@ def handle_create_user_request(user_data):
 
     if not user_data.get("username") or not user_data.get("email"):
         raise ValidationError("Username and email are required fields")
+    if not user_data.get("password"):
+        raise ValidationError("Password is required")
 
     db = SessionLocal()
     repo = UserRepository(lambda: db)
@@ -156,17 +158,16 @@ def handle_create_user_request(user_data):
         full_name=user_data.get("full_name"),
         is_active=True,
         is_admin=user_data.get("is_admin", False),
-        hashed_password=user_data.get("hashed_password")
+        hashed_password=user_data["password"]
     )
 
     try:
         db_user = repo.create(user)
-        return User.model_validate(db_user)
+        return User.model_validate(db_user).model_dump()
     except IntegrityError as e:
         db.rollback()
         import re
         msg = str(e.orig).lower()
-        # Extract the field name after the last dot in the constraint
         match = re.search(r'unique constraint failed: [\w]+\.([a-z_]+)', msg)
         if match:
             field = match.group(1)

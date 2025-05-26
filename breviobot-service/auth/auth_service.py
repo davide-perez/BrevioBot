@@ -87,6 +87,16 @@ def require_auth(f):
                 return jsonify({"error": "Authentication token required"}), 401
             
             payload = auth_service.verify_token(token)
+            
+            from persistence.user_repository import UserRepository
+            from persistence.db_session import SessionLocal
+            db = SessionLocal()
+            repo = UserRepository(lambda: db)
+            user_db = repo.get_by_username(payload.get("username"))
+            db.close()
+            if not user_db or not getattr(user_db, "is_active", True):
+                return jsonify({"error": "User not found or inactive"}), 401
+
             g.current_user = payload
             
         except AuthenticationError as e:
