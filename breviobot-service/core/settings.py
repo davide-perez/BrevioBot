@@ -38,7 +38,7 @@ class AuthSettings:
     enable_auth: bool
 
 class Settings:
-    def __init__(self):
+    def __init__(self) -> None:
         load_dotenv()
         
         self.app = AppSettings(
@@ -74,7 +74,7 @@ class Settings:
             enable_auth=os.getenv('BREVIOBOT_ENABLE_AUTH', 'true').lower() == 'true'
         )
 
-    def validate_required_settings(self):
+    def validate_required_settings(self) -> None:
         errors = []
         
         if not self.app.openai_api_key:

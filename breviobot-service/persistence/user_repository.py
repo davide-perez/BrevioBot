@@ -3,10 +3,10 @@ from .db_session import SessionLocal
 import bcrypt
 
 class UserRepository:
-    def __init__(self, db_session_factory=SessionLocal):
+    def __init__(self, db_session_factory=SessionLocal) -> None:
         self.db_session_factory = db_session_factory
 
-    def create(self, user):
+    def create(self, user) -> 'UserDB':
         db = self.db_session_factory()
         try:
             hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt())
@@ -25,7 +25,7 @@ class UserRepository:
         finally:
             db.close()
 
-    def get_by_field(self, field_name, value):
+    def get_by_field(self, field_name: str, value) -> 'UserDB | None':
         db = self.db_session_factory()
         try:
             field = getattr(UserDB, field_name, None)
@@ -35,16 +35,16 @@ class UserRepository:
         finally:
             db.close()
 
-    def get_by_id(self, user_id):
+    def get_by_id(self, user_id: int) -> 'UserDB | None':
         return self.get_by_field("id", user_id)
 
-    def get_by_username(self, username):
+    def get_by_username(self, username: str) -> 'UserDB | None':
         return self.get_by_field("username", username)
 
-    def get_by_email(self, email):
+    def get_by_email(self, email: str) -> 'UserDB | None':
         return self.get_by_field("email", email)
 
-    def verify_password(self, username, password):
+    def verify_password(self, username: str, password: str) -> 'UserDB | None':
         db = self.db_session_factory()
         try:
             user = self.get_by_username(username)

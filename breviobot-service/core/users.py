@@ -10,7 +10,7 @@ class User(BaseModel):
     is_admin: bool = False
     password: Optional[str] = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"User(id={self.id}, username='{self.username}', email='{self.email}')"
 
     model_config = {"from_attributes": True}

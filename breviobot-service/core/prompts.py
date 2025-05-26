@@ -1,4 +1,4 @@
-PROMPTS = {
+PROMPTS: dict[str, str] = {
     "it": 
         """
             Sei un assistente virtuale presso Contoso Solutions, una società di consulenza e sviluppo specializzata in soluzioni ERP e CRM basate su Microsoft Dynamics 365, con un focus principale su Dynamics 365 Business Central.

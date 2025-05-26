@@ -132,7 +132,6 @@ def handle_transcribe_request(request_files, request_form):
         if os.path.exists(temp_path):
             os.remove(temp_path)
 
-@require_auth
 def handle_create_user_request(user_data):
     from core.users import User
     from persistence.user_repository import UserRepository
