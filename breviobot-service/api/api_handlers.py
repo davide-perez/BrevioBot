@@ -10,6 +10,8 @@ from core.logger import logger
 from core.exceptions import BrevioBotError, ValidationError, RateLimitError, ConfigurationError
 from auth.auth_service import require_auth
 from auth.auth_exceptions import AuthenticationError
+from sqlalchemy.exc import IntegrityError
+import re
 
 @dataclass
 class SummarizeRequest:
@@ -158,6 +160,19 @@ def handle_create_user_request(user_data):
         hashed_password=user_data.get("hashed_password")
     )
 
-    db_user = repo.create(user)
-    db.close()
-    return User.model_validate(db_user)
+    try:
+        db_user = repo.create(user)
+        return User.model_validate(db_user)
+    except IntegrityError as e:
+        db.rollback()
+        import re
+        msg = str(e.orig).lower()
+        # Extract the field name after the last dot in the constraint
+        match = re.search(r'unique constraint failed: [\w]+\.([a-z_]+)', msg)
+        if match:
+            field = match.group(1)
+            raise ValidationError(f"A user with this {field} already exists")
+        else:
+            raise ValidationError("A user with the provided information already exists")
+    finally:
+        db.close()
