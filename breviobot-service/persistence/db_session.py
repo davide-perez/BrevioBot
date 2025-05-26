@@ -3,7 +3,7 @@ from sqlalchemy.orm import sessionmaker
 from .database import Base
 import os
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./breviobot.db")
+DATABASE_URL = os.getenv("BREVIOBOT_DATABASE_URL", "sqlite:///./breviobot.db")
 
 engine = create_engine(
     DATABASE_URL, connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}

@@ -12,10 +12,10 @@ from .auth_exceptions import AuthenticationError, TokenExpiredError, InvalidToke
 
 class AuthService:
     def __init__(self):
-        self.secret_key = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
+        self.secret_key = os.getenv("BREVIOBOT_JWT_SECRET_KEY", "your-secret-key-change-in-production")
         self.algorithm = "HS256"
-        self.token_expiry_hours = int(os.getenv("JWT_EXPIRY_HOURS", "24"))
-        self.enable_auth = os.getenv("ENABLE_AUTH", "true").lower() == "true"
+        self.token_expiry_hours = int(os.getenv("BREVIOBOT_JWT_EXPIRY_HOURS", "24"))
+        self.enable_auth = os.getenv("BREVIOBOT_ENABLE_AUTH", "true").lower() == "true"
     
     def hash_password(self, password: str) -> str:
         return hashlib.sha256(password.encode()).hexdigest()

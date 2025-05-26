@@ -43,42 +43,42 @@ class Settings:
         
         self.app = AppSettings(
             openai_api_key=os.getenv('BREVIOBOT_OPENAI_API_KEY'),
-            default_model=os.getenv('DEFAULT_MODEL', 'gpt-3.5-turbo'),
-            default_language=os.getenv('DEFAULT_LANGUAGE', 'en'),
-            max_input_length=int(os.getenv('MAX_INPUT_LENGTH', '4000')),
-            request_timeout=int(os.getenv('REQUEST_TIMEOUT', '30')),
-            debug_mode=os.getenv('DEBUG_MODE', 'False').lower() == 'true',
-            database_url=os.getenv('DATABASE_URL', 'sqlite:///./breviobot.db')
+            default_model=os.getenv('BREVIOBOT_DEFAULT_MODEL', 'gpt-3.5-turbo'),
+            default_language=os.getenv('BREVIOBOT_DEFAULT_LANGUAGE', 'en'),
+            max_input_length=int(os.getenv('BREVIOBOT_MAX_INPUT_LENGTH', '4000')),
+            request_timeout=int(os.getenv('BREVIOBOT_REQUEST_TIMEOUT', '30')),
+            debug_mode=os.getenv('BREVIOBOT_DEBUG_MODE', 'False').lower() == 'true',
+            database_url=os.getenv('BREVIOBOT_DATABASE_URL', 'sqlite:///./breviobot.db')
         )
 
         self.api = APISettings(
-            host=os.getenv('HOST', '0.0.0.0'),
-            port=int(os.getenv('PORT', '8000')),
-            rate_limit=int(os.getenv('RATE_LIMIT', '100')),
-            cors_origins=os.getenv('CORS_ORIGINS', '*').split(',')
+            host=os.getenv('BREVIOBOT_HOST', '0.0.0.0'),
+            port=int(os.getenv('BREVIOBOT_PORT', '8000')),
+            rate_limit=int(os.getenv('BREVIOBOT_RATE_LIMIT', '100')),
+            cors_origins=os.getenv('BREVIOBOT_CORS_ORIGINS', '*').split(',')
         )
         
         self.audio = AudioSettings(
-            temp_dir=os.getenv('AUDIO_TEMP_DIR', 'temp'),
-            max_file_size=int(os.getenv('AUDIO_MAX_FILE_SIZE', '25')),  # MB
+            temp_dir=os.getenv('BREVIOBOT_AUDIO_TEMP_DIR', 'temp'),
+            max_file_size=int(os.getenv('BREVIOBOT_AUDIO_MAX_FILE_SIZE', '25')),  # MB
             allowed_formats=['mp3', 'wav', 'm4a', 'flac', 'ogg']        )
         
         self.whisper = WhisperSettings(
-            use_api=os.getenv('WHISPER_USE_API', 'True').lower() == 'true',
-            model_size=os.getenv('WHISPER_MODEL_SIZE', 'base')
+            use_api=os.getenv('BREVIOBOT_WHISPER_USE_API', 'True').lower() == 'true',
+            model_size=os.getenv('BREVIOBOT_WHISPER_MODEL_SIZE', 'base')
         )
         
         self.auth = AuthSettings(
-            secret_key=os.getenv('JWT_SECRET_KEY', 'temp'),
-            token_expiry_hours=int(os.getenv('JWT_EXPIRY_HOURS', '24')),
-            enable_auth=os.getenv('ENABLE_AUTH', 'true').lower() == 'true'
+            secret_key=os.getenv('BREVIOBOT_JWT_SECRET_KEY', 'temp'),
+            token_expiry_hours=int(os.getenv('BREVIOBOT_JWT_EXPIRY_HOURS', '24')),
+            enable_auth=os.getenv('BREVIOBOT_ENABLE_AUTH', 'true').lower() == 'true'
         )
 
     def validate_required_settings(self):
         errors = []
         
         if not self.app.openai_api_key:
-            errors.append("OPENAI_API_KEY environment variable is required")
+            errors.append("BREVIOBOT_OPENAI_API_KEY environment variable is required")
             
         if errors:
             raise ValueError("Configuration errors: " + "; ".join(errors))

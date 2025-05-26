@@ -67,7 +67,7 @@ class WhisperAPITranscriber(AbstractTranscriber):
     def __init__(self):
         super().__init__()
         if not settings.is_openai_configured():
-            raise ValueError("OpenAI API key not configured - set OPENAI_API_KEY environment variable")
+            raise ValueError("BREVIOBOT_OPENAI_API_KEY environment variable not configured - set BREVIOBOT_OPENAI_API_KEY environment variable")
         self.api_key = settings.app.openai_api_key
         openai.api_key = self.api_key
 
