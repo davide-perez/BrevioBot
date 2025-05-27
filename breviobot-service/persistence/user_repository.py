@@ -6,7 +6,7 @@ class UserRepository:
     def __init__(self, db_session_factory=SessionLocal) -> None:
         self.db_session_factory = db_session_factory
 
-    def create(self, user) -> 'UserDB':
+    def create(self, user, is_verified=False, verification_token=None) -> 'UserDB':
         db = self.db_session_factory()
         try:
             hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt())
@@ -16,7 +16,9 @@ class UserRepository:
                 full_name=user.full_name,
                 is_active=user.is_active,
                 is_admin=user.is_admin,
-                password=hashed_password.decode('utf-8')
+                password=hashed_password.decode('utf-8'),
+                is_verified=is_verified,
+                verification_token=verification_token
             )
             db.add(db_user)
             db.commit()

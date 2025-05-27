@@ -11,6 +11,8 @@ from core.exceptions import ValidationError, RateLimitError, ConfigurationError
 from auth.auth_service import require_auth, AuthService
 from sqlalchemy.exc import IntegrityError
 import re
+from core.email_utils import send_email
+import secrets
 
 @dataclass
 class SummarizeRequest:
@@ -150,6 +152,8 @@ def handle_create_user_request(user_data):
         db.close()
         raise ValidationError(f"User with username '{user_data['username']}' already exists")
 
+    verification_token = secrets.token_urlsafe(32)
+
     user = User(
         id=0,
         username=user_data["username"],
@@ -161,12 +165,21 @@ def handle_create_user_request(user_data):
     )
 
     try:
-        db_user = repo.create(user)
+        db_user = repo.create(user, is_verified=False, verification_token=verification_token)
+        verify_url = f"http://localhost:8000/api/users/verify?token={verification_token}"
+        email_body = f"""
+        <p>Welcome to BrevioBot!</p>
+        <p>Please verify your email by clicking the link below:</p>
+        <p><a href='{verify_url}'>Verify Email</a></p>
+        <p>If you did not register, please ignore this email.</p>
+        """
+        send_email(db_user.email, "Verify your email for BrevioBot", email_body)
         user_dict = User.model_validate(db_user).model_dump()
         return {
             "username": user_dict["username"],
             "email": user_dict["email"],
-            "role": "admin" if user_dict.get("is_admin") else "user"
+            "role": "admin" if user_dict.get("is_admin") else "user",
+            "message": "Registration successful. Please check your email to verify your account."
         }
     except IntegrityError as e:
         db.rollback()
@@ -194,8 +207,20 @@ def handle_login_request(login_data):
     auth_service = AuthService()
     try:
         user_info = auth_service.authenticate_user(username, password)
+        from persistence.user_repository import UserRepository
+        from persistence.db_session import SessionLocal
+        with SessionLocal() as db:
+            repo = UserRepository(lambda: db)
+            user_db = repo.get_by_username(username)
+            if not user_db.is_verified:
+                return {
+                    "error": "Email not verified. Please check your email for the verification link.",
+                    "code": "email_not_verified"
+                }, 401
     except Exception as e:
-        raise ValidationError("Invalid username or password")
+        if "Invalid credentials" in str(e):
+            return {"error": "Invalid username or password"}, 401
+        return {"error": str(e)}, 400
 
     access_token = auth_service.generate_token({"user_id": user_info["user_id"], "username": user_info["username"]})
     return {
