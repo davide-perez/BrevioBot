@@ -22,7 +22,8 @@ class BrevioBotUI:
 
     def setup_page(self) -> None:
         st.set_page_config(page_title="BrevioBot", layout="centered")
-        st.title(self.state.T["title"])
+        username = st.session_state.get("username", "User")
+        st.title(self.state.T["title"].format(username=username))
 
     def language_selector(self) -> str:
         return st.selectbox(
@@ -117,3 +118,27 @@ class BrevioBotUI:
             file_name=filename,
             mime="text/plain"
         )
+
+    def login_screen(self, api_client) -> None:
+        if 'logged_in' not in st.session_state:
+            st.session_state.logged_in = False
+        if not st.session_state.logged_in:
+            st.title("Login")
+            username = st.text_input("Username")
+            password = st.text_input("Password", type="password")
+            if st.button("Login"):
+                try:
+                    success, data = api_client.login(username, password)
+                    userdata = data.get("user", {}) if data else {}
+                    if success:
+                        st.session_state.logged_in = True
+                        st.session_state.username = username
+                        st.session_state.email = userdata.get("email") if userdata else None
+                        st.session_state.access_token = data.get("access_token") if userdata else None
+                        st.success(self.state.T["login_success"])
+                        st.rerun()
+                    else:
+                        st.toast(self.state.T["login_failed"])
+                except Exception as e:
+                    st.toast(str(e))
+            st.stop()

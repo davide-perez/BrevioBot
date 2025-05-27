@@ -28,6 +28,7 @@ def main() -> None:
     api_client = ApiClient(config)
     tts_service = TextToSpeechService(config)
     ui = BrevioBotUI(state, tts_service)
+    ui.login_screen(api_client)
     ui.setup_page()
     lang = ui.language_selector()
     if lang != state.lang:

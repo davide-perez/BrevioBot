@@ -8,6 +8,22 @@ class ApiClientBase:
 
 
 class ApiClient(ApiClientBase):
+    def login(self, username: str, password: str) -> tuple[bool, dict | None]:
+        try:
+            response = requests.post(
+                f"{self.config.api_base_url}/api/auth/login",
+                json={"username": username, "password": password}
+            )
+            response.raise_for_status()
+            try:
+                data = response.json()
+            except Exception:
+                data = None
+            return response.status_code == 200, data
+        except requests.exceptions.RequestException as e:
+            logging.error(f"API request failed: {str(e)}")
+            raise RuntimeError(f"Authentication failed: {str(e)}")
+
     def summarize(self, text: str, model: str, language: str) -> str:
         if model not in AppDefaultSettings.SUPPORTED_MODELS:
             raise ValueError(f"Unsupported model: {model}")

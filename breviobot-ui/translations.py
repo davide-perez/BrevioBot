@@ -1,6 +1,6 @@
 UI = {
     "it": {
-        "title": "Ciao, sono BrevioBot e sono pronto a riassumere!",
+        "title": "Ciao, {username}! Sono BrevioBot e sono pronto a riassumere!",
         "input_mode": "Seleziona metodo di input:",
         "upload": "Upload file",
         "manual": "Scrivi testo manualmente",
@@ -20,10 +20,12 @@ UI = {
         "ollama_error_prefix": "Errore da Ollama:",
         "speak_summary": "Ascolta il riassunto",
         "speak_input": "Ascolta il testo",
-        "tts_error": "Errore durante la sintesi vocale:"
+        "tts_error": "Errore durante la sintesi vocale:",
+        "login_error": "Errore di autenticazione: verifica le tue credenziali.",
+        "login_success": "Accesso riuscito!",
     },
     "en": {
-        "title": "Hi, I'm BrevioBot and I'm ready to summarize!",
+        "title": "Hi, {username}! I'm BrevioBot and I'm ready to summarize!",
         "input_mode": "Select input method:",
         "upload": "Upload file",
         "manual": "Type text manually",
@@ -43,6 +45,8 @@ UI = {
         "ollama_error_prefix": "Ollama error:",
         "speak_summary": "Listen to summary",
         "speak_input": "Listen to text",
-        "tts_error": "Text-to-speech error:"
+        "tts_error": "Text-to-speech error:",
+        "login_error": "Authentication error: please check your credentials.",
+        "login_success": "Login successful!",
     }
 }
