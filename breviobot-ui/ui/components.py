@@ -131,6 +131,9 @@ class BrevioBotUI:
                     success, data = api_client.login(username, password)
                     userdata = data.get("user", {}) if data else {}
                     if success:
+                        self.state.set_access_token(data.get("access_token") if userdata else None)
+                        self.state.set_username(username)
+
                         st.session_state.logged_in = True
                         st.session_state.username = username
                         st.session_state.email = userdata.get("email") if userdata else None

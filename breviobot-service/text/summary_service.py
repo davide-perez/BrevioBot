@@ -4,6 +4,7 @@ from core.exceptions import ValidationError, ModelError
 from core.settings import settings
 from core.logger import logger
 from .summarizers import SummarizerFactory
+import os
 
 @dataclass
 class SummaryRequest:
@@ -63,15 +64,28 @@ class TextSummarizer:
 
     def summarize_file(self, path: str, model: str, lang: str) -> str:
         try:
-            logger.info(f"Reading file for summarization: {path}")
-            with open(path, "r", encoding="utf-8") as f:
+            base_dir = os.getcwd()
+            abs_path = os.path.abspath(path)
+            if not abs_path.startswith(base_dir):
+                logger.error(f"Attempted path traversal or access outside base dir: {path}")
+                raise ValidationError("Invalid file path.")
+
+            max_file_size = 5 * 1024 * 1024  # 5 MB
+            if not os.path.exists(abs_path):
+                logger.error(f"File not found: {abs_path}")
+                raise ValidationError(f"File not found: {path}")
+            file_size = os.path.getsize(abs_path)
+            if file_size > max_file_size:
+                logger.error(f"File too large: {abs_path} ({file_size} bytes)")
+                raise ValidationError(f"File size exceeds maximum allowed size of {max_file_size // (1024*1024)}MB.")
+
+            logger.info(f"Reading file for summarization: {abs_path}")
+            with open(abs_path, "r", encoding="utf-8") as f:
                 text = f.read()
             return self.summarize_text(text, model, lang)
-            
         except FileNotFoundError:
             logger.error(f"File not found: {path}")
             raise ValidationError(f"File not found: {path}")
-            
         except Exception as e:
             logger.error(f"Error reading file: {str(e)}", exc_info=True)
             raise

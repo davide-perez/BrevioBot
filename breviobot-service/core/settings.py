@@ -69,7 +69,7 @@ class Settings:
         )
         
         self.auth = AuthSettings(
-            secret_key=os.getenv('BREVIOBOT_JWT_SECRET_KEY', 'temp'),
+            secret_key=os.getenv('BREVIOBOT_JWT_SECRET_KEY', ''),
             token_expiry_hours=int(os.getenv('BREVIOBOT_JWT_EXPIRY_HOURS', '24')),
             enable_auth=os.getenv('BREVIOBOT_ENABLE_AUTH', 'true').lower() == 'true'
         )

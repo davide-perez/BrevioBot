@@ -3,9 +3,9 @@ import requests
 import logging
 
 class ApiClientBase:
-    def __init__(self, config):
+    def __init__(self, config, access_token: str = None):
         self.config = config
-
+        self.access_token = access_token
 
 class ApiClient(ApiClientBase):
     def login(self, username: str, password: str) -> tuple[bool, dict | None]:
@@ -30,10 +30,15 @@ class ApiClient(ApiClientBase):
         if language not in AppDefaultSettings.SUPPORTED_LANGUAGES:
             raise ValueError(f"Unsupported language: {language}")
 
+        headers = {}
+        if self.access_token:
+            headers["Authorization"] = f"Bearer {self.access_token}"
+
         try:
             response = requests.post(
                 f"{self.config.api_base_url}/api/summarize",
-                json={"text": text, "model": model, "language": language}
+                json={"text": text, "model": model, "language": language},
+                headers=headers if headers else None
             )
             response.raise_for_status()
             return response.json()["summary"]

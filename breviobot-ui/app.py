@@ -25,7 +25,8 @@ def main() -> None:
     config = AppSettings.load()
     state = AppState(config)
     state.set_translations(UI)
-    api_client = ApiClient(config)
+    access_token = st.session_state.access_token if "access_token" in st.session_state else None
+    api_client = ApiClient(config, access_token=access_token)
     tts_service = TextToSpeechService(config)
     ui = BrevioBotUI(state, tts_service)
     ui.login_screen(api_client)

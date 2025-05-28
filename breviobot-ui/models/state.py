@@ -5,6 +5,8 @@ from config.settings import AppSettings, AppDefaultSettings
 @dataclass
 class AppState:
     config: AppSettings
+    username: Optional[str] = None
+    access_token: Optional[str] = None
     current_text: str = ""
     summary: Optional[str] = None
     input_audio: Optional[bytes] = None
@@ -31,6 +33,12 @@ class AppState:
     def set_translations(self, translations: Dict[str, Dict[str, str]]) -> None:
         self.translations = translations
         self._update_active_translation()
+
+    def set_username(self, username: str) -> None:
+        self.username = username
+
+    def set_access_token(self, access_token: str) -> None:
+        self.access_token = access_token
 
     def set_language(self, lang: str) -> None:
         if lang not in AppDefaultSettings.SUPPORTED_LANGUAGES:
