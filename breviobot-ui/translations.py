@@ -23,6 +23,11 @@ UI = {
         "tts_error": "Errore durante la sintesi vocale:",
         "login_error": "Errore di autenticazione: verifica le tue credenziali.",
         "login_success": "Accesso riuscito!",
+        "signup": "Registrati",
+        "signup_success": "Registrazione avvenuta con successo! Verifica la tua email.",
+        "signup_failed": "Registrazione fallita.",
+        "password_mismatch": "Le password non corrispondono.",
+        "back_to_login": "Torna al Login",
     },
     "en": {
         "title": "Hi, {username}! I'm BrevioBot and I'm ready to summarize!",
@@ -48,5 +53,10 @@ UI = {
         "tts_error": "Text-to-speech error:",
         "login_error": "Authentication error: please check your credentials.",
         "login_success": "Login successful!",
+        "signup": "Sign Up",
+        "signup_success": "Signup successful! Please check your email.",
+        "signup_failed": "Signup failed.",
+        "password_mismatch": "Passwords do not match.",
+        "back_to_login": "Back to Login",
     }
 }
