@@ -232,3 +232,21 @@ def handle_login_request(login_data):
             "role": user_info["role"]
         }
     }
+
+def handle_verify_user_request(token):
+    from persistence.user_repository import UserRepository
+    from persistence.db_session import SessionLocal
+    if not token:
+        return {"error": "Verification token is required"}, 400
+    db = SessionLocal()
+    repo = UserRepository(lambda: db)
+    user = repo.get_by_field("verification_token", token)
+    if not user:
+        db.close()
+        return {"error": "Invalid or expired verification token"}, 400
+    user.is_verified = True
+    user.verification_token = None
+    db.add(user)
+    db.commit()
+    db.close()
+    return {"message": "Email verified successfully. You can now log in."}

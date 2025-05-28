@@ -13,6 +13,7 @@ from .api_handlers import (
     handle_authentication_error,
     handle_create_user_request,
     handle_login_request,
+    handle_verify_user_request,
 )
 from auth.auth_handlers import (
     handle_refresh_token_request, 
@@ -150,22 +151,13 @@ def create_user():
 
 @app.route("/api/users/verify", methods=["GET"])
 def verify_user():
-    from persistence.user_repository import UserRepository
-    from persistence.db_session import SessionLocal
-    token = request.args.get("token")
-    if not token:
-        return {"error": "Verification token is required"}, 400
-    db = SessionLocal()
-    repo = UserRepository(lambda: db)
-    user = repo.get_by_field("verification_token", token)
-    if not user:
-        db.close()
-        return {"error": "Invalid or expired verification token"}, 400
-    user.is_verified = True
-    user.verification_token = None
-    db.commit()
-    db.close()
-    return {"message": "Email verified successfully. You can now log in."}
+    try:
+        token = request.args.get("token")
+        from .api_handlers import handle_verify_user_request
+        return handle_verify_user_request(token)
+    except Exception as e:
+        logger.error(f"Error in email verification: {str(e)}", exc_info=True)
+        return {"error": "Failed to verify email."}, 500
 
 @app.route('/favicon.ico')
 def favicon():

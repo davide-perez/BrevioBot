@@ -1,15 +1,15 @@
 """Rename hashed_password column to password in users table
 
-Revision ID: rename_password_column
-Revises: fbd9d685eaa6
+Revision ID: 001_rename_password_column
+Revises: 000_initial_migration
 Create Date: 2025-05-26 00:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = 'rename_password_column'
-down_revision = 'fbd9d685eaa6'
+revision = '001_rename_password_column'
+down_revision = '000_initial_migration'
 branch_labels = None
 depends_on = None
 
