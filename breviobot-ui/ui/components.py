@@ -122,6 +122,11 @@ class BrevioBotUI:
     def login_screen(self, api_client) -> None:
         if 'logged_in' not in st.session_state:
             st.session_state.logged_in = False
+        if 'show_signup' not in st.session_state:
+            st.session_state.show_signup = False
+        if st.session_state.show_signup:
+            self.signup_screen(api_client)
+            st.stop()
         if not st.session_state.logged_in:
             st.title("Login")
             username = st.text_input("Username")
@@ -144,4 +149,31 @@ class BrevioBotUI:
                         st.toast(self.state.T["login_failed"])
                 except Exception as e:
                     st.toast(str(e))
+            if st.button("Sign Up"):
+                st.session_state.show_signup = True
+                st.rerun()
             st.stop()
+
+    def signup_screen(self, api_client) -> None:
+        st.title("Sign Up")
+        username = st.text_input("Choose a username", key="signup_username")
+        email = st.text_input("Email", key="signup_email")
+        password = st.text_input("Password", type="password", key="signup_password")
+        confirm_password = st.text_input("Confirm Password", type="password", key="signup_confirm_password")
+        if st.button("Sign Up"):
+            if password != confirm_password:
+                st.error("Passwords do not match.")
+                st.stop()
+            try:
+                success, data = api_client.signup(username, email, password)
+                if success:
+                    st.success("Signup successful! Please log in.")
+                    st.session_state.show_signup = False
+                    st.rerun()
+                else:
+                    st.error("Signup failed. " + (data.get("detail") if data else ""))
+            except Exception as e:
+                st.error(str(e))
+        if st.button("Back to Login"):
+            st.session_state.show_signup = False
+            st.rerun()
