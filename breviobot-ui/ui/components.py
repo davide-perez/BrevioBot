@@ -134,21 +134,23 @@ class BrevioBotUI:
             if st.button("Login"):
                 try:
                     success, data = api_client.login(username, password)
-                    userdata = data.get("user", {}) if data else {}
                     if success:
-                        self.state.set_access_token(data.get("access_token") if userdata else None)
+                        self.state.set_access_token(data.get("access_token") if data else None)
                         self.state.set_username(username)
-
+                        st.session_state.access_token = data.get("access_token") if data else None
                         st.session_state.logged_in = True
                         st.session_state.username = username
-                        st.session_state.email = userdata.get("email") if userdata else None
-                        st.session_state.access_token = data.get("access_token") if userdata else None
                         st.success(self.state.T["login_success"])
                         st.rerun()
                     else:
-                        st.toast(self.state.T["login_failed"])
+                        error_msg = None
+                        if data:
+                            error_msg = data.get("error") or data.get("message")
+                        st.toast(error_msg or "Login failed.")
+                        logging.error(f"Login error: {error_msg or data}")
                 except Exception as e:
                     st.toast(str(e))
+                    logging.error(f"Login exception: {str(e)}")
             if st.button("Sign Up"):
                 st.session_state.show_signup = True
                 st.rerun()
@@ -171,9 +173,14 @@ class BrevioBotUI:
                     st.session_state.show_signup = False
                     st.rerun()
                 else:
-                    st.error("Signup failed. " + (data.get("detail") if data else ""))
+                    error_msg = None
+                    if data:
+                        error_msg = data.get("error") or data.get("message")
+                    st.error("Signup failed. " + (error_msg or ""))
+                    logging.error(f"Signup error: {error_msg or data}")
             except Exception as e:
                 st.error(str(e))
+                logging.error(f"Signup exception: {str(e)}")
         if st.button("Back to Login"):
             st.session_state.show_signup = False
             st.rerun()

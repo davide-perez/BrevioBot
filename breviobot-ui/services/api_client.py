@@ -15,20 +15,17 @@ class ApiClient(ApiClientBase):
                 json={"username": username, "password": password}
             )
             try:
-                response.raise_for_status()
-            except requests.exceptions.HTTPError as http_err:
-                if response.status_code == 401:
-                    return False, {"detail": "Invalid username or password."}
-                logging.error(f"API request failed: {str(http_err)}")
-                raise RuntimeError(f"Authentication failed: {str(http_err)}")
-            try:
                 data = response.json()
             except Exception:
                 data = None
-            return response.status_code == 200, data
+
+            if response.ok and data and not ("error" in data or "message" in data):
+                return True, data
+            else:
+                return False, data
         except requests.exceptions.RequestException as e:
-            logging.error(f"API request failed: {str(e)}")
-            raise RuntimeError(f"Authentication failed: {str(e)}")
+            logging.error(f"Login request failed: {str(e)}")
+            return False, {"error": str(e)}
 
     def signup(self, username: str, email: str, password: str) -> tuple[bool, dict | None]:
         try:
@@ -36,21 +33,24 @@ class ApiClient(ApiClientBase):
                 f"{self.config.api_base_url}/api/auth/signup",
                 json={"username": username, "email": email, "password": password}
             )
-            response.raise_for_status()
             try:
                 data = response.json()
             except Exception:
                 data = None
-            return response.status_code == 200, data
+
+            if response.ok and data and not ("error" in data or "message" in data):
+                return True, data
+            else:
+                return False, data
         except requests.exceptions.RequestException as e:
             logging.error(f"API signup failed: {str(e)}")
-            return False, {"detail": str(e)}
+            return False, {"error": str(e)}
 
-    def summarize(self, text: str, model: str, language: str) -> str:
+    def summarize(self, text: str, model: str, language: str) -> tuple[bool, dict | None]:
         if model not in AppDefaultSettings.SUPPORTED_MODELS:
-            raise ValueError(f"Unsupported model: {model}")
+            return False, {"error": f"Unsupported model: {model}"}
         if language not in AppDefaultSettings.SUPPORTED_LANGUAGES:
-            raise ValueError(f"Unsupported language: {language}")
+            return False, {"error": f"Unsupported language: {language}"}
 
         headers = {}
         if self.access_token:
@@ -62,11 +62,15 @@ class ApiClient(ApiClientBase):
                 json={"text": text, "model": model, "language": language},
                 headers=headers if headers else None
             )
-            response.raise_for_status()
-            return response.json()["summary"]
+            try:
+                data = response.json()
+            except Exception:
+                data = None
+
+            if response.ok and data and "summary" in data and not ("error" in data or "message" in data):
+                return True, data
+            else:
+                return False, data
         except requests.exceptions.RequestException as e:
             logging.error(f"API request failed: {str(e)}")
-            raise RuntimeError(f"Failed to contact the server: {str(e)}")
-        except KeyError as e:
-            logging.error(f"Unexpected API response format: {str(e)}")
-            raise RuntimeError("Unexpected response from server")
+            return False, {"error": str(e)}

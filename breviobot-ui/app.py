@@ -44,15 +44,23 @@ def main() -> None:
             try:
                 with st.spinner(state.T["spinner"]):
                     logging.info(f"Model used: {state.model} - Language: {state.lang}")
-                    summary = api_client.summarize(
+                    success, data = api_client.summarize(
                         state.current_text,
                         state.model,
                         state.lang
                     )
-                    state.summary = summary
-                    st.session_state.summary = summary
-                    st.session_state.summary_audio = None
-                st.success(state.T["success"])
+                    if success:
+                        summary = data.get("summary") if data else None
+                        state.summary = summary
+                        st.session_state.summary = summary
+                        st.session_state.summary_audio = None
+                        st.success(state.T["success"])
+                    else:
+                        error_msg = None
+                        if data:
+                            error_msg = data.get("error") or data.get("message")
+                        st.toast(f"{state.T['error']} {error_msg or 'Summarization failed.'}")
+                        logging.error(f"Summarization error: {error_msg or data}")
             except Exception as e:
                 st.toast(f"{state.T['error']} {str(e)}")
                 logging.error("Error during summary generation", exc_info=True)
