@@ -3,9 +3,11 @@ from dataclasses import dataclass
 from typing import Dict
 
 from .auth_service import AuthService
-from core.exceptions import AuthenticationError, InvalidCredentialsError
+from core.exceptions import AuthenticationError
 from core.exceptions import ValidationError
 from core.logger import logger
+from persistence.user_repository import UserRepository
+from persistence.db_session import SessionLocal
 
 @dataclass
 class LoginRequest:
@@ -38,27 +40,21 @@ class RefreshTokenRequest:
 def handle_login_request(request_json):
     request_data = LoginRequest.from_json(request_json or {})
     auth_service = AuthService()
-    
-    try:
-        user_data = auth_service.authenticate_user(request_data.username, request_data.password)
-        token = auth_service.generate_token(user_data)
+
+    user_data = auth_service.authenticate_user(request_data.username, request_data.password)
+    token = auth_service.generate_token(user_data)
         
-        logger.info(f"Successful login for user: {request_data.username}")
-        return jsonify({
-            "token": token,
-            "user": {
-                "username": user_data["username"],
-                "user_id": user_data["user_id"],
-                "role": user_data.get("role", "user")
-            },
-            "expires_in": auth_service.token_expiry_hours * 3600  # seconds
-        })
-    
-    except InvalidCredentialsError as e:
-        return jsonify({"error": str(e)}), 401
-    except Exception as e:
-        logger.error(f"Login error: {str(e)}")
-        return jsonify({"error": "Login failed"}), 500
+    logger.info(f"Successful login for user: {request_data.username}")
+    return jsonify({
+        "token": token,
+        "user": {
+            "username": user_data["username"],
+            "user_id": user_data["user_id"],
+            "role": user_data.get("role", "user")
+        },
+        "expires_in": auth_service.token_expiry_hours * 3600  # seconds
+    })
+
 
 def handle_refresh_token_request(request_json):
     request_data = RefreshTokenRequest.from_json(request_json or {})
@@ -90,7 +86,18 @@ def handle_me_request():
             }
         })
     else:
-        return jsonify({"error": "No authenticated user"}), 401
+        raise AuthenticationError("No authenticated user")
+
+def handle_verify_user_request(token):
+    if not token:
+        raise AuthenticationError("Verification token is required")
+    with SessionLocal() as db:
+        repo = UserRepository(lambda: db)
+        user = repo.get_by_field("verification_token", token)
+        if not user:
+            raise AuthenticationError("Invalid or expired verification token")
+        repo.verify_user(user)
+    return {"message": "Email verified successfully. You can now log in."}
 
 def handle_authentication_error(error):
     logger.warning(f"Authentication error: {str(error)}")

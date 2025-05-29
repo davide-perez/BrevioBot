@@ -7,7 +7,7 @@ from text.summary_service import TextSummarizer
 from core.prompts import PROMPTS
 from core.settings import settings
 from core.logger import logger
-from core.exceptions import ValidationError, AuthenticationError, ConfigurationError
+from core.exceptions import ValidationError, AuthenticationError
 from auth.auth_service import require_auth, AuthService
 from sqlalchemy.exc import IntegrityError
 import re
@@ -223,14 +223,3 @@ def handle_login_request(login_data):
             "role": user_info["role"]
         }
     }
-
-def handle_verify_user_request(token):
-    if not token:
-        return {"error": "Verification token is required"}, 400
-    with SessionLocal() as db:
-        repo = UserRepository(lambda: db)
-        user = repo.get_by_field("verification_token", token)
-        if not user:
-            return {"error": "Invalid or expired verification token"}, 400
-        repo.verify_user(user)
-    return {"message": "Email verified successfully. You can now log in."}

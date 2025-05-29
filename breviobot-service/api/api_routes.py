@@ -3,7 +3,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_cors import CORS
 from core.settings import settings
-from core.exceptions import ValidationError, InvalidCredentialsError
+from core.exceptions import ValidationError
 from core.logger import logger
 from .api_handlers import (
     handle_validation_error,
@@ -33,7 +33,6 @@ limiter = Limiter(
 
 # Error handlers
 app.errorhandler(AuthenticationError)(handle_authentication_error)
-app.errorhandler(InvalidCredentialsError)(handle_authentication_error)
 app.errorhandler(ValidationError)(handle_validation_error)
 app.errorhandler(Exception)(handle_general_error)
 
