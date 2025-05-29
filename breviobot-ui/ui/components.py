@@ -169,7 +169,7 @@ class BrevioBotUI:
             try:
                 success, data = api_client.signup(username, email, password)
                 if success:
-                    st.success("Signup successful! Please log in.")
+                    st.success("Signup successful! Please validate your email.")
                     st.session_state.show_signup = False
                     st.rerun()
                 else:
