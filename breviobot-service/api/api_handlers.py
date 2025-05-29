@@ -7,12 +7,18 @@ from text.summary_service import TextSummarizer
 from core.prompts import PROMPTS
 from core.settings import settings
 from core.logger import logger
-from core.exceptions import ValidationError, RateLimitError, ConfigurationError
+from core.exceptions import ValidationError, AuthenticationError, ConfigurationError
 from auth.auth_service import require_auth, AuthService
 from sqlalchemy.exc import IntegrityError
 import re
 from core.email_utils import send_email
 import secrets
+import os
+from werkzeug.utils import secure_filename
+from stt.transcription_services import WhisperAPITranscriber, WhisperLocalTranscriber
+from core.users import User
+from persistence.user_repository import UserRepository
+from persistence.db_session import SessionLocal
 
 @dataclass
 class SummarizeRequest:
@@ -64,17 +70,18 @@ class TranscribeRequest:
         return '.' in filename and \
                filename.rsplit('.', 1)[1].lower() in settings.audio.allowed_formats
 
-def handle_breviobot_error(error):
-    logger.error(f"Unhandled BrevioBotError: {str(error)}", exc_info=True)
-    return jsonify({"error": str(error)}), 500
 
 def handle_general_error(error):
     logger.error(f"Unhandled unexpected error: {str(error)}", exc_info=True)
-    return jsonify({"error": "An unexpected error occurred. Please check the logs for details."}), 500
+    return jsonify({"error": "An unexpected error occurred. Please check the service logs for details."}), 500
 
 def handle_authentication_error(error):
     logger.warning(f"Authentication error: {str(error)}")
     return jsonify({"error": str(error)}), 401
+
+def handle_validation_error(error):
+    logger.error(f"Validation error: {str(error)}")
+    return jsonify({"error": str(error)}), 400
 
 @require_auth
 def handle_summarize_request(request_json):
@@ -97,14 +104,10 @@ def handle_summarize_request(request_json):
 
 @require_auth
 def handle_transcribe_request(request_files, request_form):
-    import os
-    from werkzeug.utils import secure_filename
-    from stt.transcription_services import WhisperAPITranscriber, WhisperLocalTranscriber
-    
     request_data = TranscribeRequest.from_request(request_files, request_form)
     
     if request_data.use_api and not settings.is_openai_configured():
-        raise ConfigurationError("OpenAI API key not configured for Whisper API transcription")
+        raise Exception("OpenAI API key not configured for Whisper API transcription")
     
     user_info = f" for user: {g.current_user['username']}" if hasattr(g, 'current_user') else ""
     logger.info(f"Processing transcription request{user_info} - use_api: {request_data.use_api}, model_size: {request_data.model_size}")
@@ -135,10 +138,6 @@ def handle_transcribe_request(request_files, request_form):
             os.remove(temp_path)
 
 def handle_create_user_request(user_data):
-    from core.users import User
-    from persistence.user_repository import UserRepository
-    from persistence.db_session import SessionLocal
-
     if not user_data.get("username") or not user_data.get("email"):
         raise ValidationError("Username and email are required fields")
     if not user_data.get("password"):
@@ -195,34 +194,26 @@ def handle_create_user_request(user_data):
         db.close()
 
 def handle_login_request(login_data):
-    from core.exceptions import ValidationError
-    from core.users import User
-    from auth.auth_service import AuthService
-
     username = login_data.get("username")
     password = login_data.get("password")
     if not username or not password:
-        raise ValidationError("Username and password are required")
+        raise AuthenticationError("Username and password are required")
 
     auth_service = AuthService()
-    try:
-        user_info = auth_service.authenticate_user(username, password)
-        from persistence.user_repository import UserRepository
-        from persistence.db_session import SessionLocal
-        with SessionLocal() as db:
-            repo = UserRepository(lambda: db)
-            user_db = repo.get_by_username(username)
-            if not user_db.is_verified:
-                return {
-                    "error": "Email not verified. Please check your email for the verification link.",
-                    "code": "email_not_verified"
-                }, 401
-    except Exception as e:
-        if "Invalid credentials" in str(e):
-            return {"error": "Invalid username or password"}, 401
-        return {"error": str(e)}, 400
+    user_info = auth_service.authenticate_user(username, password)
 
-    access_token = auth_service.generate_token({"user_id": user_info["user_id"], "username": user_info["username"]})
+    from persistence.user_repository import UserRepository
+    from persistence.db_session import SessionLocal
+    with SessionLocal() as db:
+        repo = UserRepository(lambda: db)
+        user_db = repo.get_by_username(username)
+        if not user_db.is_verified:
+            raise AuthenticationError("Email not verified. Please check your email for the verification link.")
+
+    access_token = auth_service.generate_token({
+        "user_id": user_info["user_id"],
+        "username": user_info["username"]
+    })
     return {
         "access_token": access_token,
         "token_type": "bearer",
@@ -234,19 +225,12 @@ def handle_login_request(login_data):
     }
 
 def handle_verify_user_request(token):
-    from persistence.user_repository import UserRepository
-    from persistence.db_session import SessionLocal
     if not token:
         return {"error": "Verification token is required"}, 400
-    db = SessionLocal()
-    repo = UserRepository(lambda: db)
-    user = repo.get_by_field("verification_token", token)
-    if not user:
-        db.close()
-        return {"error": "Invalid or expired verification token"}, 400
-    user.is_verified = True
-    user.verification_token = None
-    db.add(user)
-    db.commit()
-    db.close()
+    with SessionLocal() as db:
+        repo = UserRepository(lambda: db)
+        user = repo.get_by_field("verification_token", token)
+        if not user:
+            return {"error": "Invalid or expired verification token"}, 400
+        repo.verify_user(user)
     return {"message": "Email verified successfully. You can now log in."}

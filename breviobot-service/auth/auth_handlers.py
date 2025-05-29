@@ -1,9 +1,9 @@
-from flask import jsonify
+from flask import jsonify, g
 from dataclasses import dataclass
 from typing import Dict
 
 from .auth_service import AuthService
-from .auth_exceptions import AuthenticationError, InvalidCredentialsError
+from core.exceptions import AuthenticationError, InvalidCredentialsError
 from core.exceptions import ValidationError
 from core.logger import logger
 
@@ -63,37 +63,24 @@ def handle_login_request(request_json):
 def handle_refresh_token_request(request_json):
     request_data = RefreshTokenRequest.from_json(request_json or {})
     auth_service = AuthService()
-    
-    try:
-        payload = auth_service.verify_token(request_data.token)
-        
-        user_data = {
-            "user_id": payload["user_id"],
-            "username": payload["username"],
-            "role": payload.get("role", "user")
-        }
-        
-        new_token = auth_service.generate_token(user_data)
-        
-        logger.info(f"Token refreshed for user: {payload['username']}")
-        return jsonify({
-            "token": new_token,
-            "expires_in": auth_service.token_expiry_hours * 3600
-        })
-    
-    except AuthenticationError as e:
-        return jsonify({"error": str(e)}), 401
-    except Exception as e:
-        logger.error(f"Token refresh error: {str(e)}")
-        return jsonify({"error": "Token refresh failed"}), 500
+    payload = auth_service.verify_token(request_data.token)
+    user_data = {
+        "user_id": payload["user_id"],
+        "username": payload["username"],
+        "role": payload.get("role", "user")
+    }
+    new_token = auth_service.generate_token(user_data)
+    logger.info(f"Token refreshed for user: {payload['username']}")
+    return jsonify({
+        "token": new_token,
+        "expires_in": auth_service.token_expiry_hours * 3600
+    })
 
 def handle_logout_request():
     logger.info("User logout")
     return jsonify({"message": "Successfully logged out"})
 
 def handle_me_request():
-    from flask import g
-    
     if hasattr(g, 'current_user') and g.current_user:
         return jsonify({
             "user": {

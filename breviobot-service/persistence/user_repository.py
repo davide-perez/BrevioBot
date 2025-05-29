@@ -58,3 +58,13 @@ class UserRepository:
             return None
         finally:
             db.close()
+
+    def verify_user(self, user):
+        db = self.db_session_factory()
+        try:
+            user.is_verified = True
+            user.verification_token = None
+            db.add(user)
+            db.commit()
+        finally:
+            db.close()

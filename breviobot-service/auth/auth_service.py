@@ -7,7 +7,10 @@ from flask import request, jsonify, g
 
 from core.settings import settings
 from core.logger import logger
-from .auth_exceptions import AuthenticationError, TokenExpiredError, InvalidTokenError, InvalidCredentialsError
+from core.exceptions import AuthenticationError, TokenExpiredError, InvalidTokenError, InvalidCredentialsError
+from persistence.user_repository import UserRepository
+from persistence.db_session import SessionLocal
+import bcrypt
 
 class AuthService:
     def __init__(self) -> None:
@@ -45,10 +48,6 @@ class AuthService:
         return None
     
     def authenticate_user(self, username: str, password: str) -> Dict:
-        from persistence.user_repository import UserRepository
-        from persistence.db_session import SessionLocal
-        import bcrypt
-
         with SessionLocal() as db:
             repo = UserRepository(lambda: db)
             user_db = repo.get_by_username(username)
