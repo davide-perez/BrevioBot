@@ -19,6 +19,8 @@ class BrevioBotUI:
             st.session_state.summary_audio = None
         if 'summary' not in st.session_state:
             st.session_state.summary = None
+        if 'signup_success' not in st.session_state:
+            st.session_state.signup_success = False
 
     def setup_page(self) -> None:
         st.set_page_config(page_title="BrevioBot", layout="centered")
@@ -124,6 +126,9 @@ class BrevioBotUI:
             st.session_state.logged_in = False
         if 'show_signup' not in st.session_state:
             st.session_state.show_signup = False
+        if st.session_state.signup_success:
+            st.toast(self.state.T["signup_success"])
+            st.session_state.signup_success = False
         if st.session_state.show_signup:
             self.signup_screen(api_client)
             st.stop()
@@ -169,7 +174,7 @@ class BrevioBotUI:
             try:
                 success, data = api_client.signup(username, email, password)
                 if success:
-                    st.success("Signup successful! Please validate your email.")
+                    st.session_state.signup_success = True
                     st.session_state.show_signup = False
                     st.rerun()
                 else:
