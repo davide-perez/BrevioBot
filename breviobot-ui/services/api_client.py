@@ -19,7 +19,7 @@ class ApiClient(ApiClientBase):
             except Exception:
                 data = None
 
-            if response.ok and data and not ("error" in data or "message" in data):
+            if response.ok and data and not ("error" in data):
                 return True, data
             else:
                 return False, data
@@ -38,7 +38,7 @@ class ApiClient(ApiClientBase):
             except Exception:
                 data = None
 
-            if response.ok and data and not ("error" in data or "message" in data):
+            if response.ok and data and not ("error" in data):
                 return True, data
             else:
                 return False, data
@@ -67,7 +67,7 @@ class ApiClient(ApiClientBase):
             except Exception:
                 data = None
 
-            if response.ok and data and "summary" in data and not ("error" in data or "message" in data):
+            if response.ok and data and "summary" in data and not ("error" in data):
                 return True, data
             else:
                 return False, data

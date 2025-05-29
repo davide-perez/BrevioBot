@@ -88,7 +88,7 @@ def handle_summarize_request(request_json):
     request_data = SummarizeRequest.from_json(request_json or {})
     
     if request_data.model.startswith("gpt") and not settings.is_openai_configured():
-        raise ConfigurationError("OpenAI API key not configured for GPT models")
+        raise Exception("OpenAI API key not configured for GPT models")
     user_info = f" for user: {g.current_user['username']}" if hasattr(g, 'current_user') else ""
     logger.info(f"Processing summarization request{user_info} for language: {request_data.language}, model: {request_data.model}")
     
@@ -165,7 +165,7 @@ def handle_create_user_request(user_data):
 
     try:
         db_user = repo.create(user, is_verified=False, verification_token=verification_token)
-        verify_url = f"http://localhost:8000/api/users/verify?token={verification_token}"
+        verify_url = f"http://localhost:8000/api/auth/verify?token={verification_token}"
         email_body = f"""
         <p>Welcome to BrevioBot!</p>
         <p>Please verify your email by clicking the link below:</p>

@@ -5,7 +5,7 @@ from flask_cors import CORS
 from core.settings import settings
 from core.exceptions import ValidationError
 from core.logger import logger
-from .api_handlers import (
+from api.api_handlers import (
     handle_validation_error,
     handle_general_error,
     handle_summarize_request,
@@ -17,7 +17,8 @@ from .api_handlers import (
 from auth.auth_handlers import (
     handle_refresh_token_request, 
     handle_logout_request, 
-    handle_me_request
+    handle_me_request,
+    handle_verify_user_request
 )
 from core.exceptions import AuthenticationError
 from auth.auth_service import require_auth
@@ -41,6 +42,17 @@ app.errorhandler(Exception)(handle_general_error)
 @limiter.limit("10 per minute")
 def login():
     return handle_login_request(request.get_json())
+
+@app.route("/api/auth/signup", methods=["POST"])
+@limiter.limit(f"{settings.api.rate_limit} per minute")
+def create_user():
+    user_data = request.get_json()
+    return handle_create_user_request(user_data)
+
+@app.route("/api/auth/verify", methods=["GET"])
+def verify_user():
+    token = request.args.get("token")
+    return handle_verify_user_request(token)
 
 @app.route("/api/auth/refresh", methods=["POST"])
 @limiter.limit("10 per minute")
@@ -72,18 +84,6 @@ def transcribe():
 @app.route("/health", methods=["GET"])
 def health():
     return {"status": "healthy"}, 200
-    
-@app.route("/api/users", methods=["POST"])
-@limiter.limit(f"{settings.api.rate_limit} per minute")
-def create_user():
-    user_data = request.get_json()
-    return handle_create_user_request(user_data)
-
-@app.route("/api/users/verify", methods=["GET"])
-def verify_user():
-    token = request.args.get("token")
-    from .api_handlers import handle_verify_user_request
-    return handle_verify_user_request(token)
 
 @app.route('/favicon.ico')
 def favicon():

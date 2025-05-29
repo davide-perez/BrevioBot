@@ -145,7 +145,7 @@ class BrevioBotUI:
                     else:
                         error_msg = None
                         if data:
-                            error_msg = data.get("error") or data.get("message")
+                            error_msg = data.get("error")
                         st.toast(error_msg or "Login failed.")
                         logging.error(f"Login error: {error_msg or data}")
                 except Exception as e:
@@ -175,7 +175,7 @@ class BrevioBotUI:
                 else:
                     error_msg = None
                     if data:
-                        error_msg = data.get("error") or data.get("message")
+                        error_msg = data.get("error")
                     st.error("Signup failed. " + (error_msg or ""))
                     logging.error(f"Signup error: {error_msg or data}")
             except Exception as e:

@@ -58,7 +58,7 @@ def main() -> None:
                     else:
                         error_msg = None
                         if data:
-                            error_msg = data.get("error") or data.get("message")
+                            error_msg = data.get("error")
                         st.toast(f"{state.T['error']} {error_msg or 'Summarization failed.'}")
                         logging.error(f"Summarization error: {error_msg or data}")
             except Exception as e:
