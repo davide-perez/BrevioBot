@@ -1,14 +1,14 @@
 import smtplib
 from email.mime.text import MIMEText
-import os
+from core.settings import settings
 
 def send_email(to_email, subject, body):
-    smtp_host = os.getenv('BREVIOBOT_SMTP_HOST')
-    smtp_port = int(os.getenv('BREVIOBOT_SMTP_PORT', '587'))
-    smtp_user = os.getenv('BREVIOBOT_SMTP_USER')
-    smtp_password = os.getenv('BREVIOBOT_SMTP_PASSWORD')
-    from_email = os.getenv('BREVIOBOT_EMAIL_FROM')
-    from_name = os.getenv('BREVIOBOT_EMAIL_FROM_NAME', 'BrevioBot')
+    smtp_host = settings.email.smtp_host
+    smtp_port = settings.email.smtp_port
+    smtp_user = settings.email.smtp_user
+    smtp_password = settings.email.smtp_password
+    from_email = settings.email.from_email
+    from_name = settings.email.from_name
 
     msg = MIMEText(body, 'html')
     msg['Subject'] = subject

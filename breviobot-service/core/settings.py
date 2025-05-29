@@ -37,6 +37,15 @@ class AuthSettings:
     token_expiry_hours: int
     enable_auth: bool
 
+@dataclass
+class EmailSettings:
+    smtp_host: str
+    smtp_port: int
+    smtp_user: str
+    smtp_password: str
+    from_email: str
+    from_name: str
+
 class Settings:
     def __init__(self) -> None:
         load_dotenv()
@@ -72,6 +81,15 @@ class Settings:
             secret_key=os.getenv('BREVIOBOT_JWT_SECRET_KEY', ''),
             token_expiry_hours=int(os.getenv('BREVIOBOT_JWT_EXPIRY_HOURS', '24')),
             enable_auth=os.getenv('BREVIOBOT_ENABLE_AUTH', 'true').lower() == 'true'
+        )
+
+        self.email = EmailSettings(
+            smtp_host=os.getenv('BREVIOBOT_SMTP_HOST', ''),
+            smtp_port=int(os.getenv('BREVIOBOT_SMTP_PORT', '587')),
+            smtp_user=os.getenv('BREVIOBOT_SMTP_USER', ''),
+            smtp_password=os.getenv('BREVIOBOT_SMTP_PASSWORD', ''),
+            from_email=os.getenv('BREVIOBOT_EMAIL_FROM', ''),
+            from_name=os.getenv('BREVIOBOT_EMAIL_FROM_NAME', 'BrevioBot')
         )
 
     def validate_required_settings(self) -> None:
