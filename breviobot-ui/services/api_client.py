@@ -58,7 +58,7 @@ class ApiClient(ApiClientBase):
 
         try:
             response = requests.post(
-                f"{self.config.api_base_url}/api/summarize",
+                f"{self.config.api_base_url}/api/text/summarize",
                 json={"text": text, "model": model, "language": language},
                 headers=headers if headers else None
             )

@@ -13,7 +13,7 @@ text_limiter = Limiter(
     default_limits=[f"{settings.api.rate_limit} per minute"]
 )
 
-@text_bp.route("/api/summarize", methods=["POST"])
+@text_bp.route("/api/text/summarize", methods=["POST"])
 @text_limiter.limit(f"{settings.api.rate_limit} per minute")
 @require_auth
 def summarize():

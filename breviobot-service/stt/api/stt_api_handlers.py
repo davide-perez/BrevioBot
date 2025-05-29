@@ -39,7 +39,6 @@ class TranscribeRequest:
         return '.' in filename and \
                filename.rsplit('.', 1)[1].lower() in settings.audio.allowed_formats
 
-@require_auth
 def handle_transcribe_request(request_files, request_form):
     request_data = TranscribeRequest.from_request(request_files, request_form)
     

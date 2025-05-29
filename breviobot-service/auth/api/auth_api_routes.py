@@ -40,10 +40,13 @@ def verify_user():
 
 @auth_bp.route("/api/auth/refresh", methods=["POST"])
 @auth_limiter.limit("10 per minute")
+@require_auth
 def refresh_token():
     return handle_refresh_token_request(request.get_json())
 
 @auth_bp.route("/api/auth/logout", methods=["POST"])
+@auth_limiter.limit("10 per minute")
+@require_auth
 def logout():
     return handle_logout_request()
 

@@ -14,7 +14,7 @@ stt_limiter = Limiter(
 )
 
 
-@stt_bp.route("/api/transcribe", methods=["POST"])
+@stt_bp.route("/api/stt/transcribe", methods=["POST"])
 @stt_limiter.limit(f"{settings.api.rate_limit} per minute")
 @require_auth
 def transcribe():

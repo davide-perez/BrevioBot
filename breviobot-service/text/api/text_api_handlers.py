@@ -27,7 +27,6 @@ class SummarizeRequest:
             model=data.get("model", settings.app.default_model)
         )
 
-@require_auth
 def handle_summarize_request(request_json):
     request_data = SummarizeRequest.from_json(request_json or {})
     

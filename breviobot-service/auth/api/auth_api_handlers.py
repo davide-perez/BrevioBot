@@ -47,7 +47,6 @@ def handle_login_request(request_json):
         raise AuthenticationError("Email not verified. Please check your email for the verification link.")
     access_token = auth_service.generate_token(user_data)
 
-    logger.info(f"Successful login for user: {request_data.username}")
     return jsonify({
         "access_token": access_token,
         "token_type": "bearer",
