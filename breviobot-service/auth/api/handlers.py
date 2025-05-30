@@ -1,4 +1,5 @@
 from flask import jsonify, g
+from flask_jwt_extended import get_jwt_identity, get_jwt
 from dataclasses import dataclass
 from core.logger import logger
 from core.exceptions import ValidationError, AuthenticationError
@@ -27,17 +28,6 @@ class LoginRequest:
             password=data["password"]
         )
 
-@dataclass
-class RefreshTokenRequest:
-    token: str
-    
-    @classmethod
-    def from_json(cls, data: dict) -> 'RefreshTokenRequest':
-        if not data.get("token"):
-            raise ValidationError("Token is required")
-        
-        return cls(token=data["token"])
-
 def handle_login_request(request_json):
     request_data = LoginRequest.from_json(request_json or {})
     auth_service = JWTAuthService()
@@ -60,18 +50,30 @@ def handle_login_request(request_json):
 
 
 def handle_refresh_token_request(request_json):
-    request_data = RefreshTokenRequest.from_json(request_json or {})
+    
     auth_service = JWTAuthService()
-    payload = auth_service.verify_token(request_data.token)
+    user_id = get_jwt_identity()
+    claims = get_jwt()
+    
+    # Get current user info from database
+    with SessionLocal() as db:
+        repo = UserRepository(lambda: db)
+        user_db = repo.get_by_id(user_id)
+        if not user_db or not getattr(user_db, "is_active", True):
+            raise AuthenticationError("User not found or inactive")
+    
     user_data = {
-        "user_id": payload["user_id"],
-        "username": payload["username"],
-        "role": payload.get("role", "user")
+        "user_id": user_db.id,
+        "username": user_db.username,
+        "role": "admin" if getattr(user_db, "is_admin", False) else "user"
     }
+    
     new_token = auth_service.generate_token(user_data)
-    logger.info(f"Token refreshed for user: {payload['username']}")
+    logger.info(f"Token refreshed for user: {user_db.username}")
+    
     return jsonify({
-        "token": new_token,
+        "access_token": new_token,
+        "token_type": "bearer",
         "expires_in": auth_service.token_expiry_hours * 3600
     })
 

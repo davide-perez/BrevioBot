@@ -1,7 +1,7 @@
 from auth.api.routes import auth_bp, auth_limiter
 from stt.api.routes import stt_bp, stt_limiter
 from text.api.routes import text_bp, text_limiter
-from flask import Flask
+from flask import Flask, jsonify
 from flask_cors import CORS
 from core.settings import settings
 from core.exceptions import ValidationError
@@ -12,6 +12,7 @@ from core.api_utils import (
 )
 from core.exceptions import AuthenticationError
 from flask_jwt_extended import JWTManager
+from datetime import timedelta
 
 if __name__ == "__main__":
     app = Flask(__name__)
@@ -19,7 +20,21 @@ if __name__ == "__main__":
 
     jwt = JWTManager(app)
     app.config["JWT_SECRET_KEY"] = settings.auth.secret_key
-    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = settings.auth.token_expiry_hours * 3600
+    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=settings.auth.token_expiry_hours)
+    app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(hours=settings.auth.refresh_token_expiry_hours)
+
+    # JWT error handlers
+    @jwt.expired_token_loader
+    def expired_token_callback(jwt_header, jwt_payload):
+        return jsonify({"error": "Token has expired"}), 401
+
+    @jwt.invalid_token_loader
+    def invalid_token_callback(error):
+        return jsonify({"error": "Invalid token"}), 401
+
+    @jwt.unauthorized_loader
+    def missing_token_callback(error):
+        return jsonify({"error": "Authorization token is required"}), 401
 
     auth_limiter.init_app(app)
     stt_limiter.init_app(app)

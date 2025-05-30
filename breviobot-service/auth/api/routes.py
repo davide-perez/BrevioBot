@@ -5,11 +5,10 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from core.settings import settings
 from auth.api.handlers import (
     handle_create_user_request,
-    handle_login_request
-)
-from auth.api.handlers import (
+    handle_login_request,
     handle_refresh_token_request, 
-    handle_verify_user_request
+    handle_verify_user_request,
+    handle_logout_request
 )
 from auth.authenticators import require_auth
 
@@ -39,13 +38,13 @@ def verify_user():
 
 @auth_bp.route("/api/auth/refresh", methods=["POST"])
 @auth_limiter.limit("10 per minute")
-@require_auth
+@jwt_required()
 def refresh_token():
-    return handle_refresh_token_request(request.get_json())
+    return handle_refresh_token_request(None)
 
 @auth_bp.route("/api/auth/logout", methods=["POST"])
 @auth_limiter.limit("10 per minute")
-@require_auth
+@jwt_required()
 def logout():
     return handle_logout_request()
 

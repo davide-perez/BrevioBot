@@ -35,6 +35,7 @@ class WhisperSettings:
 class AuthSettings:
     secret_key: str
     token_expiry_hours: int
+    refresh_token_expiry_hours: int
     enable_auth: bool
 
 @dataclass
@@ -61,8 +62,7 @@ class Settings:
         )
 
         self.api = APISettings(
-            host=os.getenv('BREVIOBOT_HOST', '0.0.0.0'),
-            port=int(os.getenv('BREVIOBOT_PORT', '8000')),
+            host=os.getenv('BREVIOBOT_HOST', '0.0.0.0'),            port=int(os.getenv('BREVIOBOT_PORT', '8000')),
             rate_limit=int(os.getenv('BREVIOBOT_RATE_LIMIT', '100')),
             cors_origins=os.getenv('BREVIOBOT_CORS_ORIGINS', '*').split(',')
         )
@@ -70,7 +70,8 @@ class Settings:
         self.audio = AudioSettings(
             temp_dir=os.getenv('BREVIOBOT_AUDIO_TEMP_DIR', 'temp'),
             max_file_size=int(os.getenv('BREVIOBOT_AUDIO_MAX_FILE_SIZE', '25')),  # MB
-            allowed_formats=['mp3', 'wav', 'm4a', 'flac', 'ogg']        )
+            allowed_formats=['mp3', 'wav', 'm4a', 'flac', 'ogg']
+        )
         
         self.whisper = WhisperSettings(
             use_api=os.getenv('BREVIOBOT_WHISPER_USE_API', 'True').lower() == 'true',
@@ -80,6 +81,7 @@ class Settings:
         self.auth = AuthSettings(
             secret_key=os.getenv('BREVIOBOT_JWT_SECRET_KEY', ''),
             token_expiry_hours=int(os.getenv('BREVIOBOT_JWT_EXPIRY_HOURS', '24')),
+            refresh_token_expiry_hours=int(os.getenv('BREVIOBOT_JWT_REFRESH_EXPIRY_HOURS', '168')),  # 7 days default
             enable_auth=os.getenv('BREVIOBOT_ENABLE_AUTH', 'true').lower() == 'true'
         )
 
