@@ -40,6 +40,24 @@ class JWTAuthService:
             logger.info(f"Successful login for user: {username}")
             return user_db
 
+    def _load_current_user(user_id, anonymous_ok=True):
+        if not user_id:
+            g.current_user = ANONYMOUS_USER
+            return False
+        with SessionLocal() as db:
+            repo = UserRepository(lambda: db)
+            user_db = repo.get_by_id(user_id)
+            if user_db and user_db.is_active:
+                g.current_user = {
+                    "user_id": user_db.id,
+                    "username": user_db.username,
+                    "role": UserRepository.get_role(user_db)
+                }
+                return True
+            else:
+                g.current_user = ANONYMOUS_USER
+                return False
+
 
 def require_auth(f: callable) -> callable:
     @wraps(f)
@@ -50,17 +68,9 @@ def require_auth(f: callable) -> callable:
             g.current_user = ANONYMOUS_USER
             return f(*args, **kwargs)
         user_id = get_jwt_identity()
-        with SessionLocal() as db:
-            repo = UserRepository(lambda: db)
-            user_db = repo.get_by_id(user_id)
-            if not user_db or not user_db.is_active:
-                logger.warning(f"User not found or inactive: {user_id}")
-                raise AuthenticationError("User not found or inactive")
-            g.current_user = {
-                "user_id": user_db.id,
-                "username": user_db.username,
-                "role": UserRepository.get_role(user_db)
-            }
+        if not auth_service._load_current_user(user_id, anonymous_ok=False):
+            logger.warning(f"User not found or inactive: {user_id}")
+            raise AuthenticationError("User not found or inactive")
         return f(*args, **kwargs)
     return decorated_function
 
@@ -75,20 +85,7 @@ def optional_auth(f: callable) -> callable:
         try:
             verify_jwt_in_request(optional=True)
             user_id = get_jwt_identity()
-            if user_id:
-                with SessionLocal() as db:
-                    repo = UserRepository(lambda: db)
-                    user_db = repo.get_by_id(user_id)
-                    if user_db and user_db.is_active:
-                        g.current_user = {
-                            "user_id": user_db.id,
-                            "username": user_db.username,
-                            "role": UserRepository.get_role(user_db)
-                        }
-                    else:
-                        g.current_user = ANONYMOUS_USER
-            else:
-                g.current_user = ANONYMOUS_USER
+            auth_service._load_current_user(user_id, anonymous_ok=True)
         except Exception:
             g.current_user = ANONYMOUS_USER
         return f(*args, **kwargs)
