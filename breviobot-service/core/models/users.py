@@ -7,14 +7,10 @@ class User(BaseModel):
     email: str
     full_name: Optional[str] = None
     is_active: bool = True
-    is_admin: bool = False
     password: Optional[str] = None
 
     def __str__(self) -> str:
         return f"User(id={self.id}, username='{self.username}', email='{self.email}')"
-
-    def get_role(self) -> str:
-        return "admin" if self.is_admin else "user"
 
     def to_dict(self) -> dict:
         return {
@@ -22,9 +18,7 @@ class User(BaseModel):
             "username": self.username,
             "email": self.email,
             "full_name": self.full_name,
-            "is_active": self.is_active,
-            "is_admin": self.is_admin,
-            "role": self.get_role(),
+            "is_active": self.is_active
         }
 
     model_config = {"from_attributes": True}

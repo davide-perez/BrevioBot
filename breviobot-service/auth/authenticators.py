@@ -9,7 +9,7 @@ from persistence.db_session import SessionLocal
 from core.settings import settings
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt, verify_jwt_in_request
 
-ANONYMOUS_USER = {"role": "anonymous", "username": "anonymous"}
+ANONYMOUS_USER = {"username": "anonymous"}
 
 class JWTAuthService:
     def __init__(self) -> None:
@@ -25,8 +25,7 @@ class JWTAuthService:
             raise ValidationError("User ID is required to generate a token")
         additional_claims = {
             'user_id': user_db.id,
-            'username': user_db.username,
-            'role': UserRepository.get_role(user_db)
+            'username': user_db.username
         }
         return create_access_token(identity=str(user_db.id), additional_claims=additional_claims)
     
@@ -40,25 +39,6 @@ class JWTAuthService:
             logger.info(f"Successful login for user: {username}")
             return user_db
 
-    def _load_current_user(user_id, anonymous_ok=True):
-        if not user_id:
-            g.current_user = ANONYMOUS_USER
-            return False
-        with SessionLocal() as db:
-            repo = UserRepository(lambda: db)
-            user_db = repo.get_by_id(user_id)
-            if user_db and user_db.is_active:
-                g.current_user = {
-                    "user_id": user_db.id,
-                    "username": user_db.username,
-                    "role": UserRepository.get_role(user_db)
-                }
-                return True
-            else:
-                g.current_user = ANONYMOUS_USER
-                return False
-
-
 def require_auth(f: callable) -> callable:
     @wraps(f)
     @jwt_required()
@@ -68,25 +48,17 @@ def require_auth(f: callable) -> callable:
             g.current_user = ANONYMOUS_USER
             return f(*args, **kwargs)
         user_id = get_jwt_identity()
-        if not auth_service._load_current_user(user_id, anonymous_ok=False):
-            logger.warning(f"User not found or inactive: {user_id}")
-            raise AuthenticationError("User not found or inactive")
-        return f(*args, **kwargs)
-    return decorated_function
-
-
-def optional_auth(f: callable) -> callable:
-    @wraps(f)
-    def decorated_function(*args: object, **kwargs: object) -> object:
-        auth_service = JWTAuthService()
-        if not auth_service.enable_auth:
-            g.current_user = ANONYMOUS_USER
-            return f(*args, **kwargs)
-        try:
-            verify_jwt_in_request(optional=True)
-            user_id = get_jwt_identity()
-            auth_service._load_current_user(user_id, anonymous_ok=True)
-        except Exception:
-            g.current_user = ANONYMOUS_USER
+        with SessionLocal() as db:
+            repo = UserRepository(lambda: db)
+            user_db = repo.get_by_id(user_id)
+            if user_db and user_db.is_active:
+                g.current_user = {
+                    "user_id": user_db.id,
+                    "username": user_db.username
+                }
+            else:
+                logger.warning(f"User not found or inactive: {user_id}")
+                g.current_user = ANONYMOUS_USER
+                raise AuthenticationError("User not found or inactive")
         return f(*args, **kwargs)
     return decorated_function

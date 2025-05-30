@@ -15,7 +15,6 @@ class UserRepository:
                 email=user.email,
                 full_name=user.full_name,
                 is_active=user.is_active,
-                is_admin=user.is_admin,
                 password=hashed_password.decode('utf-8'),
                 is_verified=is_verified,
                 verification_token=verification_token
@@ -57,10 +56,6 @@ class UserRepository:
             return None
         finally:
             db.close()
-
-    @staticmethod
-    def get_role(user) -> str:
-        return "admin" if getattr(user, "is_admin", False) else "user"
 
     def verify_user(self, user):
         db = self.db_session_factory()

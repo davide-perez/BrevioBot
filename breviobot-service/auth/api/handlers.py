@@ -35,11 +35,7 @@ def handle_login_request(request_json):
     if not user_db or not user_db.is_verified:
         raise AuthenticationError("Email not verified. Please check your email for the verification link.")
     access_token = auth_service.generate_token(user_db)
-    user_dict = user_db.to_dict() if hasattr(user_db, 'to_dict') else {
-        "username": user_db.username,
-        "email": user_db.email,
-        "role": UserRepository.get_role(user_db)
-    }
+    user_dict = User.model_validate(user_db).to_dict()
     return jsonify({
         "access_token": access_token,
         "token_type": "bearer",
@@ -96,7 +92,6 @@ def handle_create_user_request(user_data):
             email=user_data["email"],
             full_name=user_data.get("full_name"),
             is_active=True,
-            is_admin=user_data.get("is_admin", False),
             password=user_data["password"]
         )
         try:
@@ -109,15 +104,10 @@ def handle_create_user_request(user_data):
             <p>If you did not register, please ignore this email.</p>
             """
             send_email(db_user.email, "Verify your email for BrevioBot", email_body)
-            user_dict = db_user.to_dict() if hasattr(db_user, 'to_dict') else {
-                "username": db_user.username,
-                "email": db_user.email,
-                "role": UserRepository.get_role(db_user)
-            }
+            user_dict = User.model_validate(db_user).to_dict()
             return jsonify({
                 "username": user_dict["username"],
                 "email": user_dict["email"],
-                "role": user_dict["role"],
                 "message": "Registration successful. Please check your email to verify your account."
             })
         except IntegrityError as e:
