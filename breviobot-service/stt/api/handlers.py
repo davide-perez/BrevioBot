@@ -5,7 +5,7 @@ import os
 from flask import jsonify, g
 from core.exceptions import ValidationError
 from core.settings import settings
-from auth.auth_service import require_auth
+from auth.authenticators import require_auth
 from core.logger import logger
 from stt.transcribers import WhisperAPITranscriber, WhisperLocalTranscriber
 

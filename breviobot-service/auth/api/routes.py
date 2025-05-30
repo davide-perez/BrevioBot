@@ -2,17 +2,17 @@ from flask import Blueprint, request
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from core.settings import settings
-from auth.api.auth_api_handlers import (
+from auth.api.handlers import (
     handle_create_user_request,
     handle_login_request
 )
-from auth.api.auth_api_handlers import (
+from auth.api.handlers import (
     handle_refresh_token_request, 
     handle_logout_request, 
     handle_me_request,
     handle_verify_user_request
 )
-from auth.auth_service import require_auth
+from auth.authenticators import require_auth
 
 auth_bp = Blueprint("auth_api", __name__)
 

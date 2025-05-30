@@ -1,9 +1,8 @@
 from dataclasses import dataclass
 from core.exceptions import ValidationError
 from core.settings import settings
-from auth.auth_service import require_auth
 from core.logger import logger
-from text.summary_service import TextSummarizer
+from text.summarizers import TextSummarizer
 from core.prompts import PROMPTS
 from flask import jsonify, g
 

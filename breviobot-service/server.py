@@ -1,6 +1,6 @@
-from auth.api.auth_api_routes import auth_bp, auth_limiter
-from stt.api.stt_api_routes import stt_bp, stt_limiter
-from text.api.text_api_routes import text_bp, text_limiter
+from auth.api.routes import auth_bp, auth_limiter
+from stt.api.routes import stt_bp, stt_limiter
+from text.api.routes import text_bp, text_limiter
 from flask import Flask
 from flask_cors import CORS
 from core.settings import settings

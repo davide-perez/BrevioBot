@@ -2,11 +2,11 @@ from flask import jsonify, g
 from dataclasses import dataclass
 from core.logger import logger
 from core.exceptions import ValidationError, AuthenticationError
-from auth.auth_service import AuthService
+from auth.authenticators import JWTAuthService
 from sqlalchemy.exc import IntegrityError
 from core.email_utils import send_email
 from core.models.users import User
-from persistence.user_repository import UserRepository
+from persistence.repositories import UserRepository
 from persistence.db_session import SessionLocal
 import secrets
 
@@ -40,7 +40,7 @@ class RefreshTokenRequest:
 
 def handle_login_request(request_json):
     request_data = LoginRequest.from_json(request_json or {})
-    auth_service = AuthService()
+    auth_service = JWTAuthService()
 
     user_data = auth_service.authenticate_user(request_data.username, request_data.password)
     if not user_data.get("is_verified"):
@@ -61,7 +61,7 @@ def handle_login_request(request_json):
 
 def handle_refresh_token_request(request_json):
     request_data = RefreshTokenRequest.from_json(request_json or {})
-    auth_service = AuthService()
+    auth_service = JWTAuthService()
     payload = auth_service.verify_token(request_data.token)
     user_data = {
         "user_id": payload["user_id"],

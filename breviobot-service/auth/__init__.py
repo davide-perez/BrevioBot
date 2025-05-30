@@ -1,6 +1,6 @@
-from .auth_service import AuthService, require_auth
+from .authenticators import JWTAuthService, require_auth
 
 __all__ = [
-    'AuthService',
+    'JWTAuthService',
     'require_auth'
 ]

@@ -7,7 +7,7 @@ from flask import request, g
 from core.exceptions import ValidationError
 from core.logger import logger
 from core.exceptions import AuthenticationError
-from persistence.user_repository import UserRepository
+from persistence.repositories import UserRepository
 from persistence.db_session import SessionLocal
 import bcrypt
 from sqlalchemy.exc import IntegrityError
@@ -16,7 +16,7 @@ from core.models.users import User
 from core.email_utils import send_email
 from core.settings import settings
 
-class AuthService:
+class JWTAuthService:
     def __init__(self) -> None:
         self.secret_key = settings.auth.secret_key
         if not self.secret_key:
@@ -129,7 +129,7 @@ class AuthService:
 def require_auth(f: callable) -> callable:
     @wraps(f)
     def decorated_function(*args: object, **kwargs: object) -> object:
-        auth_service = AuthService()
+        auth_service = JWTAuthService()
         if not auth_service.enable_auth:
             g.current_user = {"role": "anonymous", "username": "anonymous"}
             return f(*args, **kwargs)
@@ -156,7 +156,7 @@ def require_auth(f: callable) -> callable:
 def optional_auth(f: callable) -> callable:
     @wraps(f)
     def decorated_function(*args: object, **kwargs: object) -> object:
-        auth_service = AuthService()
+        auth_service = JWTAuthService()
         token = auth_service.get_token_from_request()
         if token:
             payload = auth_service.verify_token(token)
