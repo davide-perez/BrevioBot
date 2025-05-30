@@ -31,46 +31,33 @@ class LoginRequest:
 def handle_login_request(request_json):
     request_data = LoginRequest.from_json(request_json or {})
     auth_service = JWTAuthService()
-
-    user_data = auth_service.authenticate_user(request_data.username, request_data.password)
-    if not user_data.get("is_verified"):
+    user_db = auth_service.authenticate_user(request_data.username, request_data.password)
+    if not getattr(user_db, "is_verified", False):
         raise AuthenticationError("Email not verified. Please check your email for the verification link.")
-    access_token = auth_service.generate_token(user_data)
-
+    access_token = auth_service.generate_token(user_db)
+    user_dict = user_db.to_dict() if hasattr(user_db, 'to_dict') else {
+        "username": user_db.username,
+        "email": user_db.email,
+        "role": UserRepository.get_role(user_db)
+    }
     return jsonify({
         "access_token": access_token,
         "token_type": "bearer",
         "expires_in": auth_service.token_expiry_hours * 3600,
-        "user": {
-            "username": user_data["username"],
-            "email": user_data.get("email"),
-            "role": user_data["role"]
-        }
+        "user": user_dict
     })
 
 
 def handle_refresh_token_request(request_json):
-    
     auth_service = JWTAuthService()
     user_id = get_jwt_identity()
-    claims = get_jwt()
-    
-    # Get current user info from database
     with SessionLocal() as db:
         repo = UserRepository(lambda: db)
         user_db = repo.get_by_id(user_id)
         if not user_db or not getattr(user_db, "is_active", True):
             raise AuthenticationError("User not found or inactive")
-    
-    user_data = {
-        "user_id": user_db.id,
-        "username": user_db.username,
-        "role": "admin" if getattr(user_db, "is_admin", False) else "user"
-    }
-    
-    new_token = auth_service.generate_token(user_data)
+    new_token = auth_service.generate_token(user_db)
     logger.info(f"Token refreshed for user: {user_db.username}")
-    
     return jsonify({
         "access_token": new_token,
         "token_type": "bearer",
@@ -97,15 +84,12 @@ def handle_create_user_request(user_data):
         raise ValidationError("Username and email are required fields")
     if not user_data.get("password"):
         raise ValidationError("Password is required")
-
     with SessionLocal() as db:
         repo = UserRepository(lambda: db)
         existing_user = repo.get_by_username(user_data["username"])
         if existing_user:
             raise ValidationError(f"User with username '{user_data['username']}' already exists")
-
         verification_token = secrets.token_urlsafe(32)
-
         user = User(
             id=0,
             username=user_data["username"],
@@ -115,7 +99,6 @@ def handle_create_user_request(user_data):
             is_admin=user_data.get("is_admin", False),
             password=user_data["password"]
         )
-
         try:
             db_user = repo.create(user, is_verified=False, verification_token=verification_token)
             verify_url = f"http://localhost:8000/api/auth/verify?token={verification_token}"
@@ -126,11 +109,15 @@ def handle_create_user_request(user_data):
             <p>If you did not register, please ignore this email.</p>
             """
             send_email(db_user.email, "Verify your email for BrevioBot", email_body)
-            user_dict = User.model_validate(db_user).model_dump()
+            user_dict = db_user.to_dict() if hasattr(db_user, 'to_dict') else {
+                "username": db_user.username,
+                "email": db_user.email,
+                "role": UserRepository.get_role(db_user)
+            }
             return jsonify({
                 "username": user_dict["username"],
                 "email": user_dict["email"],
-                "role": "admin" if user_dict.get("is_admin") else "user",
+                "role": user_dict["role"],
                 "message": "Registration successful. Please check your email to verify your account."
             })
         except IntegrityError as e:

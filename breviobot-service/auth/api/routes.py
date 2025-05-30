@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -38,20 +38,20 @@ def verify_user():
 
 @auth_bp.route("/api/auth/refresh", methods=["POST"])
 @auth_limiter.limit("10 per minute")
-@jwt_required()
+@require_auth
 def refresh_token():
     return handle_refresh_token_request(None)
 
 @auth_bp.route("/api/auth/logout", methods=["POST"])
 @auth_limiter.limit("10 per minute")
-@jwt_required()
+@require_auth
 def logout():
     return handle_logout_request()
 
 @auth_bp.route("/api/auth/me", methods=["GET"])
-@jwt_required()
+@require_auth
 def me():
-    current_user = get_jwt_identity()
+    current_user = g.current_user
     return jsonify(logged_in_as=current_user), 200
 
 @auth_bp.route('/favicon.ico')

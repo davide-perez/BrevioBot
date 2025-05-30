@@ -46,18 +46,21 @@ class UserRepository:
     def get_by_email(self, email: str) -> 'UserDB | None':
         return self.get_by_field("email", email)
 
-    def verify_password(self, username: str, password: str) -> 'UserDB | None':
+    def authenticate(self, username: str, password: str) -> 'UserDB | None':
         db = self.db_session_factory()
         try:
             user = self.get_by_username(username)
             if not user:
                 return None
-            import bcrypt
             if bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
                 return user
             return None
         finally:
             db.close()
+
+    @staticmethod
+    def get_role(user) -> str:
+        return "admin" if getattr(user, "is_admin", False) else "user"
 
     def verify_user(self, user):
         db = self.db_session_factory()
