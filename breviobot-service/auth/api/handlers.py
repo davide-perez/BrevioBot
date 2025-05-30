@@ -32,7 +32,7 @@ def handle_login_request(request_json):
     request_data = LoginRequest.from_json(request_json or {})
     auth_service = JWTAuthService()
     user_db = auth_service.authenticate_user(request_data.username, request_data.password)
-    if not getattr(user_db, "is_verified", False):
+    if not user_db or not user_db.is_verified:
         raise AuthenticationError("Email not verified. Please check your email for the verification link.")
     access_token = auth_service.generate_token(user_db)
     user_dict = user_db.to_dict() if hasattr(user_db, 'to_dict') else {
@@ -54,7 +54,7 @@ def handle_refresh_token_request(request_json):
     with SessionLocal() as db:
         repo = UserRepository(lambda: db)
         user_db = repo.get_by_id(user_id)
-        if not user_db or not getattr(user_db, "is_active", True):
+        if not user_db.is_active:
             raise AuthenticationError("User not found or inactive")
     new_token = auth_service.generate_token(user_db)
     logger.info(f"Token refreshed for user: {user_db.username}")

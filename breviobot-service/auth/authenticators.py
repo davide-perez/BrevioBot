@@ -20,7 +20,7 @@ class JWTAuthService:
         self.enable_auth = settings.auth.enable_auth
 
     def generate_token(self, user_db) -> str:
-        user_id = getattr(user_db, 'id', None)
+        user_id = None if not user_db else user_db.id
         if not user_id:
             raise ValidationError("User ID is required to generate a token")
         additional_claims = {
@@ -53,7 +53,7 @@ def require_auth(f: callable) -> callable:
         with SessionLocal() as db:
             repo = UserRepository(lambda: db)
             user_db = repo.get_by_id(user_id)
-            if not user_db or not getattr(user_db, "is_active", True):
+            if not user_db or not user_db.is_active:
                 logger.warning(f"User not found or inactive: {user_id}")
                 raise AuthenticationError("User not found or inactive")
             g.current_user = {
@@ -79,7 +79,7 @@ def optional_auth(f: callable) -> callable:
                 with SessionLocal() as db:
                     repo = UserRepository(lambda: db)
                     user_db = repo.get_by_id(user_id)
-                    if user_db and getattr(user_db, "is_active", True):
+                    if user_db and user_db.is_active:
                         g.current_user = {
                             "user_id": user_db.id,
                             "username": user_db.username,
