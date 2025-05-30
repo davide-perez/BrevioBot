@@ -79,18 +79,6 @@ def handle_logout_request():
     logger.info("User logout")
     return jsonify({"message": "Successfully logged out"})
 
-def handle_me_request():
-    if hasattr(g, 'current_user') and g.current_user:
-        return jsonify({
-            "user": {
-                "username": g.current_user.get("username"),
-                "user_id": g.current_user.get("user_id"),
-                "role": g.current_user.get("role", "user")
-            }
-        })
-    else:
-        raise AuthenticationError("No authenticated user")
-
 def handle_verify_user_request(token):
     if not token:
         raise AuthenticationError("Verification token is required")

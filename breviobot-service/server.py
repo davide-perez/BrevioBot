@@ -11,10 +11,15 @@ from core.api_utils import (
     handle_authentication_error
 )
 from core.exceptions import AuthenticationError
+from flask_jwt_extended import JWTManager
 
 if __name__ == "__main__":
     app = Flask(__name__)
     CORS(app, origins=settings.api.cors_origins)
+
+    jwt = JWTManager(app)
+    app.config["JWT_SECRET_KEY"] = settings.auth.secret_key
+    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = settings.auth.token_expiry_hours * 3600
 
     auth_limiter.init_app(app)
     stt_limiter.init_app(app)

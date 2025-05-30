@@ -1,6 +1,7 @@
-from flask import Blueprint, request
+from flask import Blueprint, request, jsonify
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from core.settings import settings
 from auth.api.handlers import (
     handle_create_user_request,
@@ -8,8 +9,6 @@ from auth.api.handlers import (
 )
 from auth.api.handlers import (
     handle_refresh_token_request, 
-    handle_logout_request, 
-    handle_me_request,
     handle_verify_user_request
 )
 from auth.authenticators import require_auth
@@ -51,9 +50,10 @@ def logout():
     return handle_logout_request()
 
 @auth_bp.route("/api/auth/me", methods=["GET"])
-@require_auth
+@jwt_required()
 def me():
-    return handle_me_request()
+    current_user = get_jwt_identity()
+    return jsonify(logged_in_as=current_user), 200
 
 @auth_bp.route('/favicon.ico')
 def favicon():
