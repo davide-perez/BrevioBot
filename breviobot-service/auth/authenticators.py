@@ -29,13 +29,20 @@ class JWTAuthService:
         }
         return create_access_token(identity=str(user_db.id), additional_claims=additional_claims)
     
+    def validate_user_status(self, user_db, require_verified=True):
+        if not user_db:
+            raise AuthenticationError("User not found")
+        if not getattr(user_db, 'is_active', True):
+            raise AuthenticationError("User not found or inactive")
+        if require_verified and not getattr(user_db, 'is_verified', True):
+            raise AuthenticationError("Email not verified. Please check your email for the verification link.")
+        return True
+
     def authenticate_user(self, username: str, password: str):
         with SessionLocal() as db:
             repo = UserRepository(db)
             user_db = repo.authenticate(username, password)
-            if not user_db:
-                logger.warning(f"Login attempt with invalid credentials: {username}")
-                raise AuthenticationError("Invalid credentials")
+            self.validate_user_status(user_db, require_verified=True)
             logger.info(f"Successful login for user: {username}")
             return user_db
 
@@ -51,14 +58,15 @@ def require_auth(f: callable) -> callable:
         with SessionLocal() as db:
             repo = UserRepository(db)
             user_db = repo.get(id=user_id)
-            if user_db and user_db.is_active:
+            try:
+                auth_service.validate_user_status(user_db, require_verified=True)
                 g.current_user = {
                     "user_id": user_db.id,
                     "username": user_db.username
                 }
-            else:
+            except AuthenticationError as e:
                 logger.warning(f"User not found or inactive: {user_id}")
                 g.current_user = ANONYMOUS_USER
-                raise AuthenticationError("User not found or inactive")
+                raise
         return f(*args, **kwargs)
     return decorated_function
