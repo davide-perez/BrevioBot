@@ -101,14 +101,3 @@ class AuthService:
         else:
             self.logout()
             raise Exception("Authentication failed.")
-
-    def ensure_fresh_access_token(self) -> None:
-        """
-        Refresh the access token if it is expired or about to expire, based on its exp claim.
-        Raises Exception if refresh fails or no valid refresh token is available.
-        """
-        if self.is_access_token_expired():
-            if not self.refresh_token or self.is_refresh_token_expired():
-                self.logout()
-                raise Exception("No valid refresh token available. Please log in again.")
-            self.refresh_access_token()
