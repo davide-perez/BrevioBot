@@ -80,7 +80,7 @@ class Settings:
         
         self.auth = AuthSettings(
             secret_key=os.getenv('BREVIOBOT_JWT_SECRET_KEY', ''),
-            token_expiry_minutes=int(os.getenv('BREVIOBOT_JWT_EXPIRY_MINUTES', '15')),
+            token_expiry_minutes=int(os.getenv('BREVIOBOT_JWT_EXPIRY_MINUTES', '1')),
             refresh_token_expiry_minutes=int(os.getenv('BREVIOBOT_JWT_REFRESH_EXPIRY_MINUTES', '43200')),
             enable_auth=os.getenv('BREVIOBOT_ENABLE_AUTH', 'true').lower() == 'true'
         )

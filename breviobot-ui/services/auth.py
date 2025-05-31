@@ -86,18 +86,4 @@ class AuthService:
             raise Exception("No access token set.")
         if self.is_access_token_expired() and self.refresh_token:
             self.refresh_access_token(self.refresh_token)
-            return self.access_token, self.refresh_token
-        headers = {"Authorization": f"Bearer {self.access_token}"}
-        try:
-            response = requests.get(f"{self.config.api_base_url}/api/auth/me", headers=headers)
-        except Exception as e:
-            logging.error(f"Token validation request failed: {str(e)}")
-            raise
-        if response.status_code == 200:
-            return self.access_token, self.refresh_token
-        elif response.status_code == 401 and self.refresh_token:
-            self.refresh_access_token(self.refresh_token)
-            return self.access_token, self.refresh_token
-        else:
-            self.logout()
-            raise Exception("Authentication failed.")
+        return self.access_token, self.refresh_token

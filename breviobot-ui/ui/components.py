@@ -142,10 +142,13 @@ class BrevioBotUI:
                 try:
                     success, data = api_client.login(username, password)
                     if success:
-                        self.state.set_access_token(data.get("access_token") if data else None)
+                        access_token = data.get("access_token") if data else None
+                        refresh_token = data.get("refresh_token") if data else None
+                        self.state.set_access_token(access_token)
                         self.state.set_username(username)
-                        st.session_state.access_token = data.get("access_token") if data else None
-                        st.session_state.refresh_token = data.get("refresh_token") if data else None
+                        st.session_state.access_token = access_token
+                        st.session_state.refresh_token = refresh_token
+                        api_client.set_tokens(access_token, refresh_token)
                         st.session_state.logged_in = True
                         st.session_state.username = username
                         st.success(self.state.T["login_success"])
@@ -177,8 +180,13 @@ class BrevioBotUI:
             try:
                 success, data = api_client.signup(username, email, password)
                 if success:
+                    access_token = data.get("access_token") if data else None
+                    refresh_token = data.get("refresh_token") if data else None
+                    api_client.set_tokens(access_token, refresh_token)
                     st.session_state.signup_success = True
                     st.session_state.show_signup = False
+                    st.session_state.access_token = access_token
+                    st.session_state.refresh_token = refresh_token
                     st.rerun()
                 else:
                     error_msg = None
