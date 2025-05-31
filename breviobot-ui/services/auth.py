@@ -3,15 +3,30 @@ import base64
 import json
 import logging
 import requests
+import streamlit as st
 
 
 class AuthService:
     GRACE_PERIOD_SECONDS = 60  # Refresh token 1 minute before expiry
 
-    def __init__(self, config, access_token=None, refresh_token=None):
+    def __init__(self, config, access_token=None, refresh_token=None, sync_session=True):
         self.config = config
+        self._sync_session = sync_session
         self.access_token = access_token
         self.refresh_token = refresh_token
+        if self._sync_session:
+            self._load_from_session()
+
+    def _load_from_session(self):
+        if 'access_token' in st.session_state:
+            self.access_token = st.session_state.access_token
+        if 'refresh_token' in st.session_state:
+            self.refresh_token = st.session_state.refresh_token
+
+    def _sync_to_session(self):
+        if self._sync_session:
+            st.session_state.access_token = self.access_token
+            st.session_state.refresh_token = self.refresh_token
 
     def _decode_jwt_exp(self, token: str) -> int | None:
         try:
@@ -51,10 +66,14 @@ class AuthService:
     def set_tokens(self, access_token: str, refresh_token: str):
         self.access_token = access_token
         self.refresh_token = refresh_token
+        self._sync_to_session()
 
     def logout(self):
         self.access_token = None
         self.refresh_token = None
+        if self._sync_session:
+            st.session_state.access_token = None
+            st.session_state.refresh_token = None
 
     def refresh_access_token(self, refresh_token: str = None) -> None:
         token = refresh_token or self.refresh_token
@@ -74,6 +93,7 @@ class AuthService:
                 self.access_token = data["access_token"]
                 if "refresh_token" in data:
                     self.refresh_token = data["refresh_token"]
+                self._sync_to_session()
             else:
                 self.logout()
                 raise Exception(data.get("error", "Failed to refresh token"))

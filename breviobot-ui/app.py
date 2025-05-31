@@ -25,9 +25,7 @@ def main() -> None:
     config = AppSettings.load()
     state = AppState(config)
     state.set_translations(UI)
-    access_token = st.session_state.access_token if "access_token" in st.session_state else None
-    refresh_token = st.session_state.refresh_token if "refresh_token" in st.session_state else None
-    api_client = ApiClient(config, access_token=access_token, refresh_token=refresh_token)
+    api_client = ApiClient(config)
     tts_service = TextToSpeechService(config)
     ui = BrevioBotUI(state, tts_service)
     ui.login_screen(api_client)
@@ -43,19 +41,12 @@ def main() -> None:
     if st.button(state.T["generate"]):
         if state.current_text.strip():
             try:
-                access_token = st.session_state.access_token if "access_token" in st.session_state else None
-                refresh_token = st.session_state.refresh_token if "refresh_token" in st.session_state else None
-                if access_token and refresh_token:
-                    try:
-                        api_client.set_tokens(access_token, refresh_token)
-                        new_access_token, new_refresh_token = api_client.auth_service.ensure_valid_access_token()
-                        st.session_state.access_token = new_access_token
-                        st.session_state.refresh_token = new_refresh_token
-                        api_client.access_token = new_access_token
-                    except Exception as e:
-                        st.toast(f"{state.T['login_error']} {str(e)}")
-                        st.session_state.logged_in = False
-                        st.stop()
+                try:
+                    new_access_token, new_refresh_token = api_client.auth_service.ensure_valid_access_token()
+                except Exception as e:
+                    st.toast(f"{state.T['login_error']} {str(e)}")
+                    st.session_state.logged_in = False
+                    st.stop()
                 with st.spinner(state.T["spinner"]):
                     logging.info(f"Model used: {state.model} - Language: {state.lang}")
                     success, data = api_client.summarize(

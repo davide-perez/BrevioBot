@@ -8,12 +8,9 @@ class ApiClientBase:
         self.config = config
 
 class ApiClient(ApiClientBase):
-    def __init__(self, config, access_token: str = None, refresh_token: str = None):
+    def __init__(self, config):
         super().__init__(config)
-        self.auth_service = AuthService(config, access_token, refresh_token)
-
-    def set_tokens(self, access_token: str, refresh_token: str):
-        self.auth_service.set_tokens(access_token, refresh_token)
+        self.auth_service = AuthService(config)
 
     def login(self, username: str, password: str) -> tuple[bool, dict | None]:
         try:
