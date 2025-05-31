@@ -1,4 +1,4 @@
-from .database import UserDB
+from .database import UserDB, UserGoogleToken
 import bcrypt
 
 class UserRepository:
@@ -36,4 +36,21 @@ class UserRepository:
         user.is_verified = True
         user.verification_token = None
         self.db.add(user)
+        self.db.commit()
+
+class UserGoogleTokenRepository:
+    def __init__(self, db):
+        self.db = db
+
+    def get_token(self, user_id):
+        record = self.db.query(UserGoogleToken).filter_by(user_id=user_id).first()
+        return record.token if record else None
+
+    def set_token(self, user_id, token_blob):
+        record = self.db.query(UserGoogleToken).filter_by(user_id=user_id).first()
+        if record:
+            record.token = token_blob
+        else:
+            record = UserGoogleToken(user_id=user_id, token=token_blob)
+            self.db.add(record)
         self.db.commit()

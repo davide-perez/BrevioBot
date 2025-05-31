@@ -2,6 +2,7 @@ import os
 from dataclasses import dataclass
 from typing import Dict, Optional
 from dotenv import load_dotenv
+from types import SimpleNamespace
 
 @dataclass
 class AppSettings:
@@ -92,6 +93,10 @@ class Settings:
             smtp_password=os.getenv('BREVIOBOT_SMTP_PASSWORD', ''),
             from_email=os.getenv('BREVIOBOT_EMAIL_FROM', ''),
             from_name=os.getenv('BREVIOBOT_EMAIL_FROM_NAME', 'BrevioBot')
+        )
+
+        self.google_client_secret = SimpleNamespace(
+            credentials_json=os.getenv('GOOGLE_CLIENT_SECRET_PATH', '')
         )
 
     def validate_required_settings(self) -> None:
