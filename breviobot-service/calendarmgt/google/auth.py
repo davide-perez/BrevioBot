@@ -22,7 +22,7 @@ def get_credentials_from_file(user_id, creds_path):
                 creds.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(creds_path, SCOPES)
-                creds = flow.run_local_server(port=0)
+                creds = flow.run_local_server(port=8000)
             repo.set_token(user_id, pickle.dumps(creds))
     return creds
 

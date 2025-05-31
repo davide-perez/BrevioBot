@@ -6,7 +6,7 @@ def handle_fetch_events(req):
     user_id = g.current_user['user_id']
     calendar_id = req.args.get('calendar_id', 'primary')
     max_results = int(req.args.get('max_results', 10))
-    creds_path = settings.google_client_secret
+    creds_path = settings.google_client_secret.credentials_json
     events = fetch_events(user_id, calendar_id=calendar_id, max_results=max_results, creds_path=creds_path)
     return jsonify({'events': events})
 
@@ -15,7 +15,7 @@ def handle_create_event(req):
     user_id = g.current_user['user_id']
     calendar_id = req.args.get('calendar_id', 'primary')
     event_data = req.get_json()
-    creds_path = settings.google_calendar.credentials_json
+    creds_path = settings.google_client_secret.credentials_json
     event = create_event(user_id, event_data, calendar_id=calendar_id, creds_path=creds_path)
     return jsonify({'event': event})
 
@@ -23,6 +23,6 @@ def handle_create_event(req):
 def handle_delete_event(event_id, req):
     user_id = g.current_user['user_id']
     calendar_id = req.args.get('calendar_id', 'primary')
-    creds_path = settings.google_calendar.credentials_json
+    creds_path = settings.google_client_secret.credentials_json
     delete_event(user_id, event_id, calendar_id=calendar_id, creds_path=creds_path)
     return jsonify({'deleted': True})
