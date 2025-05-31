@@ -1,6 +1,7 @@
 from auth.api.routes import auth_bp, auth_limiter
 from stt.api.routes import stt_bp, stt_limiter
 from text.api.routes import text_bp, text_limiter
+from calendarmgt.google.api.routes import calendar_bp, calendar_limiter
 from flask import Flask, jsonify
 from flask_cors import CORS
 from core.settings import settings
@@ -39,10 +40,12 @@ if __name__ == "__main__":
     auth_limiter.init_app(app)
     stt_limiter.init_app(app)
     text_limiter.init_app(app)
+    calendar_limiter.init_app(app)
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(stt_bp)
     app.register_blueprint(text_bp)
+    app.register_blueprint(calendar_bp)
 
     app.errorhandler(AuthenticationError)(handle_authentication_error)
     app.errorhandler(ValidationError)(handle_validation_error)
