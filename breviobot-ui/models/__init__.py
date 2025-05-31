@@ -1,1 +1,0 @@
-"""BrevioBot UI models module."""
