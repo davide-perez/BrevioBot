@@ -3,7 +3,7 @@ from flask_jwt_extended import get_jwt_identity, get_jwt
 from dataclasses import dataclass
 from core.logger import logger
 from core.exceptions import ValidationError, AuthenticationError
-from auth.authenticators import JWTAuthService
+from auth.authenticators import _jwt_auth_service
 from sqlalchemy.exc import IntegrityError
 from core.email_utils import send_email
 from core.models.users import User
@@ -30,7 +30,7 @@ class LoginRequest:
 
 def handle_login_request(request_json):
     request_data = LoginRequest.from_json(request_json or {})
-    auth_service = JWTAuthService()
+    auth_service = _jwt_auth_service
     user_db = auth_service.authenticate_user(request_data.username, request_data.password)
     access_token = auth_service.generate_token(user_db)
     user_dict = User.model_validate(user_db).to_dict()
@@ -43,7 +43,7 @@ def handle_login_request(request_json):
 
 
 def handle_refresh_token_request(request_json):
-    auth_service = JWTAuthService()
+    auth_service = _jwt_auth_service
     user_id = get_jwt_identity()
     with SessionLocal() as db:
         repo = UserRepository(db)
