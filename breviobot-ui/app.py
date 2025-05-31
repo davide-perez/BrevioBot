@@ -2,7 +2,6 @@ import streamlit as st
 import logging
 from pathlib import Path
 from config.settings import AppSettings, AppDefaultSettings
-from models.state import AppState
 from ui.components import BrevioBotUI
 from services.api_client import ApiClient
 from services.tts_service import TextToSpeechService
@@ -23,46 +22,62 @@ def setup_logging() -> None:
 def main() -> None:
     setup_logging()
     config = AppSettings.load()
-    state = AppState(config)
-    state.set_translations(UI)
-    access_token = st.session_state.access_token if "access_token" in st.session_state else None
-    api_client = ApiClient(config, access_token=access_token)
+    if 'lang' not in st.session_state:
+        st.session_state.lang = config.default_lang
+    if 'model' not in st.session_state:
+        st.session_state.model = config.default_model
+    if 'current_text' not in st.session_state:
+        st.session_state.current_text = ""
+    if 'summary' not in st.session_state:
+        st.session_state.summary = None
+    if 'translations' not in st.session_state:
+        st.session_state.translations = UI
+    if 'T' not in st.session_state:
+        st.session_state.T = UI.get(st.session_state.lang, UI.get("en", {}))
+    api_client = ApiClient(config)
     tts_service = TextToSpeechService(config)
-    ui = BrevioBotUI(state, tts_service)
+    ui = BrevioBotUI(tts_service)
+
     ui.login_screen(api_client)
     ui.setup_page()
     lang = ui.language_selector()
-    if lang != state.lang:
-        state.set_language(lang)
+    if lang != st.session_state.lang:
+        st.session_state.lang = lang
+        st.session_state.T = UI.get(lang, UI.get("en", {}))
     model = ui.model_selector()
-    if model != state.model:
-        state.set_model(model)
+    if model != st.session_state.model:
+        st.session_state.model = model
     ui.text_input_section()
 
-    if st.button(state.T["generate"]):
-        if state.current_text.strip():
+    if st.button(st.session_state.T["generate"]):
+        if st.session_state.current_text.strip():
             try:
-                with st.spinner(state.T["spinner"]):
-                    logging.info(f"Model used: {state.model} - Language: {state.lang}")
+                try:
+                    new_access_token, new_refresh_token = api_client.auth_service.ensure_valid_access_token()
+                except Exception as e:
+                    st.toast(f"{st.session_state.T['login_error']} {str(e)}")
+                    st.session_state.logged_in = False
+                    st.stop()
+                with st.spinner(st.session_state.T["spinner"]):
+                    logging.info(f"Model used: {st.session_state.model} - Language: {st.session_state.lang}")
                     success, data = api_client.summarize(
-                        state.current_text,
-                        state.model,
-                        state.lang
+                        st.session_state.current_text,
+                        st.session_state.model,
+                        st.session_state.lang
                     )
                     if success:
                         summary = data.get("summary") if data else None
-                        state.summary = summary
                         st.session_state.summary = summary
                         st.session_state.summary_audio = None
-                        st.success(state.T["success"])
+                        st.success(st.session_state.T["success"])
                     else:
                         error_msg = None
                         if data:
                             error_msg = data.get("error")
-                        st.toast(f"{state.T['error']} {error_msg or 'Summarization failed.'}")
+                        st.toast(f"{st.session_state.T['error']} {error_msg or 'Summarization failed.'}")
                         logging.error(f"Summarization error: {error_msg or data}")
             except Exception as e:
-                st.toast(f"{state.T['error']} {str(e)}")
+                st.toast(f"{st.session_state.T['error']} {str(e)}")
                 logging.error("Error during summary generation", exc_info=True)
 
     ui.summary_section()

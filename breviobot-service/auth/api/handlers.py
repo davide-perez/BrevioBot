@@ -1,14 +1,17 @@
 from flask import jsonify, g
+from flask_jwt_extended import get_jwt_identity, get_jwt, create_access_token, create_refresh_token
 from dataclasses import dataclass
 from core.logger import logger
 from core.exceptions import ValidationError, AuthenticationError
-from auth.authenticators import JWTAuthService
+from auth.authenticators import _jwt_auth_service
 from sqlalchemy.exc import IntegrityError
 from core.email_utils import send_email
 from core.models.users import User
 from persistence.repositories import UserRepository
 from persistence.db_session import SessionLocal
 import secrets
+from core.settings import settings
+from datetime import timedelta
 
 @dataclass
 class LoginRequest:
@@ -27,76 +30,53 @@ class LoginRequest:
             password=data["password"]
         )
 
-@dataclass
-class RefreshTokenRequest:
-    token: str
-    
-    @classmethod
-    def from_json(cls, data: dict) -> 'RefreshTokenRequest':
-        if not data.get("token"):
-            raise ValidationError("Token is required")
-        
-        return cls(token=data["token"])
-
 def handle_login_request(request_json):
     request_data = LoginRequest.from_json(request_json or {})
-    auth_service = JWTAuthService()
-
-    user_data = auth_service.authenticate_user(request_data.username, request_data.password)
-    if not user_data.get("is_verified"):
-        raise AuthenticationError("Email not verified. Please check your email for the verification link.")
-    access_token = auth_service.generate_token(user_data)
-
+    auth_service = _jwt_auth_service
+    user_db = auth_service.authenticate_user(request_data.username, request_data.password)
+    if not settings.auth.refresh_token_expiry_minutes or settings.auth.refresh_token_expiry_minutes <= 0:
+        raise ValidationError("Refresh token expiry (settings.auth.refresh_token_expiry_minutes) must be set to a positive integer.")
+    access_token = auth_service.generate_token(user_db)
+    refresh_token = create_refresh_token(
+        identity=str(user_db.id),
+        expires_delta=timedelta(minutes=settings.auth.refresh_token_expiry_minutes)
+    )
+    user_dict = User.model_validate(user_db).to_dict()
     return jsonify({
         "access_token": access_token,
+        "refresh_token": refresh_token,
         "token_type": "bearer",
-        "expires_in": auth_service.token_expiry_hours * 3600,
-        "user": {
-            "username": user_data["username"],
-            "email": user_data.get("email"),
-            "role": user_data["role"]
-        }
+        "expires_in": settings.auth.token_expiry_minutes * 60,
+        "refresh_expires_in": settings.auth.refresh_token_expiry_minutes * 60,
+        "user": user_dict
     })
 
 
 def handle_refresh_token_request(request_json):
-    request_data = RefreshTokenRequest.from_json(request_json or {})
-    auth_service = JWTAuthService()
-    payload = auth_service.verify_token(request_data.token)
-    user_data = {
-        "user_id": payload["user_id"],
-        "username": payload["username"],
-        "role": payload.get("role", "user")
-    }
-    new_token = auth_service.generate_token(user_data)
-    logger.info(f"Token refreshed for user: {payload['username']}")
+    user_id = get_jwt_identity()
+    if not settings.auth.refresh_token_expiry_minutes or settings.auth.refresh_token_expiry_minutes <= 0:
+        raise ValidationError("Refresh token expiry (settings.auth.refresh_token_expiry_minutes) must be set to a positive integer.")
+    with SessionLocal() as db:
+        repo = UserRepository(db)
+        user_db = repo.get(id=user_id)
+        _jwt_auth_service.validate_user_status(user_db, require_verified=True)
+    new_token = _jwt_auth_service.generate_token(user_db)
     return jsonify({
-        "token": new_token,
-        "expires_in": auth_service.token_expiry_hours * 3600
+        "access_token": new_token,
+        "token_type": "bearer",
+        "expires_in": settings.auth.token_expiry_minutes * 60
     })
 
 def handle_logout_request():
     logger.info("User logout")
     return jsonify({"message": "Successfully logged out"})
 
-def handle_me_request():
-    if hasattr(g, 'current_user') and g.current_user:
-        return jsonify({
-            "user": {
-                "username": g.current_user.get("username"),
-                "user_id": g.current_user.get("user_id"),
-                "role": g.current_user.get("role", "user")
-            }
-        })
-    else:
-        raise AuthenticationError("No authenticated user")
-
 def handle_verify_user_request(token):
     if not token:
         raise AuthenticationError("Verification token is required")
     with SessionLocal() as db:
-        repo = UserRepository(lambda: db)
-        user = repo.get_by_field("verification_token", token)
+        repo = UserRepository(db)
+        user = repo.get(verification_token=token)
         if not user:
             raise AuthenticationError("Invalid or expired verification token")
         repo.verify_user(user)
@@ -107,25 +87,20 @@ def handle_create_user_request(user_data):
         raise ValidationError("Username and email are required fields")
     if not user_data.get("password"):
         raise ValidationError("Password is required")
-
     with SessionLocal() as db:
-        repo = UserRepository(lambda: db)
-        existing_user = repo.get_by_username(user_data["username"])
+        repo = UserRepository(db)
+        existing_user = repo.get(username=user_data["username"])
         if existing_user:
             raise ValidationError(f"User with username '{user_data['username']}' already exists")
-
         verification_token = secrets.token_urlsafe(32)
-
         user = User(
             id=0,
             username=user_data["username"],
             email=user_data["email"],
             full_name=user_data.get("full_name"),
             is_active=True,
-            is_admin=user_data.get("is_admin", False),
             password=user_data["password"]
         )
-
         try:
             db_user = repo.create(user, is_verified=False, verification_token=verification_token)
             verify_url = f"http://localhost:8000/api/auth/verify?token={verification_token}"
@@ -136,11 +111,10 @@ def handle_create_user_request(user_data):
             <p>If you did not register, please ignore this email.</p>
             """
             send_email(db_user.email, "Verify your email for BrevioBot", email_body)
-            user_dict = User.model_validate(db_user).model_dump()
+            user_dict = User.model_validate(db_user).to_dict()
             return jsonify({
                 "username": user_dict["username"],
                 "email": user_dict["email"],
-                "role": "admin" if user_dict.get("is_admin") else "user",
                 "message": "Registration successful. Please check your email to verify your account."
             })
         except IntegrityError as e:

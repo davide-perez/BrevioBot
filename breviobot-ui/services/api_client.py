@@ -1,13 +1,17 @@
 from config.settings import AppDefaultSettings
 import requests
 import logging
+from services.auth import AuthService
 
 class ApiClientBase:
-    def __init__(self, config, access_token: str = None):
+    def __init__(self, config):
         self.config = config
-        self.access_token = access_token
 
 class ApiClient(ApiClientBase):
+    def __init__(self, config):
+        super().__init__(config)
+        self.auth_service = AuthService(config)
+
     def login(self, username: str, password: str) -> tuple[bool, dict | None]:
         try:
             response = requests.post(
@@ -53,8 +57,8 @@ class ApiClient(ApiClientBase):
             return False, {"error": f"Unsupported language: {language}"}
 
         headers = {}
-        if self.access_token:
-            headers["Authorization"] = f"Bearer {self.access_token}"
+        if self.auth_service.access_token:
+            headers["Authorization"] = f"Bearer {self.auth_service.access_token}"
 
         try:
             response = requests.post(
