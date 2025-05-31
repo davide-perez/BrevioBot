@@ -16,7 +16,6 @@ class JWTAuthService:
         self.secret_key = settings.auth.secret_key
         if not self.secret_key:
             raise Exception("BREVIOBOT_JWT_SECRET_KEY environment variable must be set")
-        self.token_expiry_hours = settings.auth.token_expiry_hours
         self.enable_auth = settings.auth.enable_auth
 
     def generate_token(self, user_db) -> str:

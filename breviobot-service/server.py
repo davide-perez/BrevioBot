@@ -20,8 +20,8 @@ if __name__ == "__main__":
 
     jwt = JWTManager(app)
     app.config["JWT_SECRET_KEY"] = settings.auth.secret_key
-    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=settings.auth.token_expiry_hours)
-    app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(hours=settings.auth.refresh_token_expiry_hours)
+    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=settings.auth.token_expiry_minutes)
+    app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(minutes=settings.auth.refresh_token_expiry_minutes)
 
     # JWT error handlers
     @jwt.expired_token_loader

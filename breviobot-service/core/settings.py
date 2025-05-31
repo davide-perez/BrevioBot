@@ -34,8 +34,8 @@ class WhisperSettings:
 @dataclass 
 class AuthSettings:
     secret_key: str
-    token_expiry_hours: int
-    refresh_token_expiry_hours: int
+    token_expiry_minutes: int
+    refresh_token_expiry_minutes: int
     enable_auth: bool
 
 @dataclass
@@ -80,8 +80,8 @@ class Settings:
         
         self.auth = AuthSettings(
             secret_key=os.getenv('BREVIOBOT_JWT_SECRET_KEY', ''),
-            token_expiry_hours=int(os.getenv('BREVIOBOT_JWT_EXPIRY_HOURS', '24')),
-            refresh_token_expiry_hours=int(os.getenv('BREVIOBOT_JWT_REFRESH_EXPIRY_HOURS', '168')),  # 7 days default
+            token_expiry_minutes=int(os.getenv('BREVIOBOT_JWT_EXPIRY_MINUTES', '15')),
+            refresh_token_expiry_minutes=int(os.getenv('BREVIOBOT_JWT_REFRESH_EXPIRY_MINUTES', '43200')),
             enable_auth=os.getenv('BREVIOBOT_ENABLE_AUTH', 'true').lower() == 'true'
         )
 

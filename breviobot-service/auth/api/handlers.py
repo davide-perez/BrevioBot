@@ -10,6 +10,7 @@ from core.models.users import User
 from persistence.repositories import UserRepository
 from persistence.db_session import SessionLocal
 import secrets
+from core.settings import settings
 
 @dataclass
 class LoginRequest:
@@ -37,7 +38,7 @@ def handle_login_request(request_json):
     return jsonify({
         "access_token": access_token,
         "token_type": "bearer",
-        "expires_in": auth_service.token_expiry_hours * 3600,
+        "expires_in": settings.auth.token_expiry_minutes * 60,
         "user": user_dict
     })
 
@@ -54,7 +55,7 @@ def handle_refresh_token_request(request_json):
     return jsonify({
         "access_token": new_token,
         "token_type": "bearer",
-        "expires_in": auth_service.token_expiry_hours * 3600
+        "expires_in": settings.auth.token_expiry_minutes * 60
     })
 
 def handle_logout_request():
