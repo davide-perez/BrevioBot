@@ -49,26 +49,30 @@ class JWTAuthService:
 _jwt_auth_service = JWTAuthService()
 
 def require_auth(f: callable) -> callable:
-    @wraps(f)
-    @jwt_required()
-    def decorated_function(*args: object, **kwargs: object) -> object:
-        auth_service = _jwt_auth_service
-        if not auth_service.enable_auth:
+    auth_service = _jwt_auth_service
+    if not auth_service.enable_auth:
+        @wraps(f)
+        def decorated_function(*args: object, **kwargs: object) -> object:
             g.current_user = ANONYMOUS_USER
             return f(*args, **kwargs)
-        user_id = get_jwt_identity()
-        with SessionLocal() as db:
-            repo = UserRepository(db)
-            user_db = repo.get(id=user_id)
-            try:
-                auth_service.validate_user_status(user_db, require_verified=True)
-                g.current_user = {
-                    "user_id": user_db.id,
-                    "username": user_db.username
-                }
-            except AuthenticationError as e:
-                logger.warning(f"User not found or inactive: {user_id}")
-                g.current_user = ANONYMOUS_USER
-                raise
-        return f(*args, **kwargs)
-    return decorated_function
+        return decorated_function
+    else:
+        @wraps(f)
+        @jwt_required()
+        def decorated_function(*args: object, **kwargs: object) -> object:
+            user_id = get_jwt_identity()
+            with SessionLocal() as db:
+                repo = UserRepository(db)
+                user_db = repo.get(id=user_id)
+                try:
+                    auth_service.validate_user_status(user_db, require_verified=True)
+                    g.current_user = {
+                        "user_id": user_db.id,
+                        "username": user_db.username
+                    }
+                except AuthenticationError as e:
+                    logger.warning(f"User not found or inactive: {user_id}")
+                    g.current_user = ANONYMOUS_USER
+                    raise
+            return f(*args, **kwargs)
+        return decorated_function
