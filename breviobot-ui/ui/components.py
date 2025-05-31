@@ -21,6 +21,8 @@ class BrevioBotUI:
             st.session_state.summary = None
         if 'signup_success' not in st.session_state:
             st.session_state.signup_success = False
+        if 'refresh_token' not in st.session_state:
+            st.session_state.refresh_token = None
 
     def setup_page(self) -> None:
         st.set_page_config(page_title="BrevioBot", layout="centered")
@@ -143,6 +145,7 @@ class BrevioBotUI:
                         self.state.set_access_token(data.get("access_token") if data else None)
                         self.state.set_username(username)
                         st.session_state.access_token = data.get("access_token") if data else None
+                        st.session_state.refresh_token = data.get("refresh_token") if data else None
                         st.session_state.logged_in = True
                         st.session_state.username = username
                         st.success(self.state.T["login_success"])

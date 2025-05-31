@@ -92,3 +92,23 @@ class ApiClient(ApiClientBase):
         except requests.exceptions.RequestException as e:
             logging.error(f"Refresh token request failed: {str(e)}")
             return False, {"error": str(e)}
+
+# TODO: store and use expiration dates to refresh the token
+    def ensure_valid_access_token(self, access_token: str, refresh_token: str) -> tuple[str, str]:
+        headers = {"Authorization": f"Bearer {access_token}"}
+        try:
+            response = requests.get(f"{self.config.api_base_url}/api/auth/me", headers=headers)
+        except Exception as e:
+            logging.error(f"Token validation request failed: {str(e)}")
+            raise
+        if response.status_code == 200:
+            return access_token, refresh_token
+        elif response.status_code == 401 and refresh_token:
+            success, data = self.refresh_access_token(refresh_token)
+            if success:
+                new_access_token = data.get("access_token")
+                return new_access_token, refresh_token
+            else:
+                raise Exception(data.get("error", "Failed to refresh token"))
+        else:
+            raise Exception("Authentication failed.")
