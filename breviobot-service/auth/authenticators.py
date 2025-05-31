@@ -46,11 +46,13 @@ class JWTAuthService:
             logger.info(f"Successful login for user: {username}")
             return user_db
 
+_jwt_auth_service = JWTAuthService()
+
 def require_auth(f: callable) -> callable:
     @wraps(f)
     @jwt_required()
     def decorated_function(*args: object, **kwargs: object) -> object:
-        auth_service = JWTAuthService()
+        auth_service = _jwt_auth_service
         if not auth_service.enable_auth:
             g.current_user = ANONYMOUS_USER
             return f(*args, **kwargs)
