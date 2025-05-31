@@ -49,7 +49,7 @@ def handle_refresh_token_request(request_json):
     user_id = get_jwt_identity()
     with SessionLocal() as db:
         repo = UserRepository(db)
-        user_db = repo.get_by_id(user_id)
+        user_db = repo.get(id=user_id)
         if not user_db.is_active:
             raise AuthenticationError("User not found or inactive")
     new_token = auth_service.generate_token(user_db)
@@ -69,7 +69,7 @@ def handle_verify_user_request(token):
         raise AuthenticationError("Verification token is required")
     with SessionLocal() as db:
         repo = UserRepository(db)
-        user = repo.get_by_field("verification_token", token)
+        user = repo.get(verification_token=token)
         if not user:
             raise AuthenticationError("Invalid or expired verification token")
         repo.verify_user(user)
@@ -82,7 +82,7 @@ def handle_create_user_request(user_data):
         raise ValidationError("Password is required")
     with SessionLocal() as db:
         repo = UserRepository(db)
-        existing_user = repo.get_by_username(user_data["username"])
+        existing_user = repo.get(username=user_data["username"])
         if existing_user:
             raise ValidationError(f"User with username '{user_data['username']}' already exists")
         verification_token = secrets.token_urlsafe(32)

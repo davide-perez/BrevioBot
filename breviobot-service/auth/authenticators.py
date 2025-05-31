@@ -50,7 +50,7 @@ def require_auth(f: callable) -> callable:
         user_id = get_jwt_identity()
         with SessionLocal() as db:
             repo = UserRepository(db)
-            user_db = repo.get_by_id(user_id)
+            user_db = repo.get(id=user_id)
             if user_db and user_db.is_active:
                 g.current_user = {
                     "user_id": user_db.id,
