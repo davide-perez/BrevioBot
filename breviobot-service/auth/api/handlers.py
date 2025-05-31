@@ -1,5 +1,5 @@
 from flask import jsonify, g
-from flask_jwt_extended import get_jwt_identity, get_jwt
+from flask_jwt_extended import get_jwt_identity, get_jwt, create_access_token, create_refresh_token
 from dataclasses import dataclass
 from core.logger import logger
 from core.exceptions import ValidationError, AuthenticationError
@@ -11,6 +11,7 @@ from persistence.repositories import UserRepository
 from persistence.db_session import SessionLocal
 import secrets
 from core.settings import settings
+from datetime import timedelta
 
 @dataclass
 class LoginRequest:
@@ -33,25 +34,31 @@ def handle_login_request(request_json):
     request_data = LoginRequest.from_json(request_json or {})
     auth_service = _jwt_auth_service
     user_db = auth_service.authenticate_user(request_data.username, request_data.password)
+    if not settings.auth.refresh_token_expiry_minutes or settings.auth.refresh_token_expiry_minutes <= 0:
+        raise ValidationError("Refresh token expiry (settings.auth.refresh_token_expiry_minutes) must be set to a positive integer.")
     access_token = auth_service.generate_token(user_db)
+    refresh_token = create_refresh_token(
+        identity=str(user_db.id),
+        expires_delta=timedelta(minutes=settings.auth.refresh_token_expiry_minutes)
+    )
     user_dict = User.model_validate(user_db).to_dict()
     return jsonify({
         "access_token": access_token,
+        "refresh_token": refresh_token,
         "token_type": "bearer",
         "expires_in": settings.auth.token_expiry_minutes * 60,
+        "refresh_expires_in": settings.auth.refresh_token_expiry_minutes * 60,
         "user": user_dict
     })
 
 
 def handle_refresh_token_request(request_json):
-    auth_service = _jwt_auth_service
     user_id = get_jwt_identity()
     with SessionLocal() as db:
         repo = UserRepository(db)
         user_db = repo.get(id=user_id)
-        auth_service.validate_user_status(user_db, require_verified=True)
-    new_token = auth_service.generate_token(user_db)
-    logger.info(f"Token refreshed for user: {user_db.username}")
+        _jwt_auth_service.validate_user_status(user_db, require_verified=True)
+    new_token = _jwt_auth_service.generate_token(user_db)
     return jsonify({
         "access_token": new_token,
         "token_type": "bearer",

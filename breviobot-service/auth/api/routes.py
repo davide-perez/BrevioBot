@@ -38,7 +38,7 @@ def verify_user():
 
 @auth_bp.route("/api/auth/refresh", methods=["POST"])
 @auth_limiter.limit("10 per minute")
-@require_auth
+@jwt_required(refresh=True)
 def refresh_token():
     return handle_refresh_token_request(None)
 

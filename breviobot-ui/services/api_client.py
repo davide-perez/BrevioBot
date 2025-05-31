@@ -74,3 +74,21 @@ class ApiClient(ApiClientBase):
         except requests.exceptions.RequestException as e:
             logging.error(f"API request failed: {str(e)}")
             return False, {"error": str(e)}
+
+    def refresh_access_token(self, refresh_token: str) -> tuple[bool, dict | None]:
+        try:
+            response = requests.post(
+                f"{self.config.api_base_url}/api/auth/refresh",
+                headers={"Authorization": f"Bearer {refresh_token}"}
+            )
+            try:
+                data = response.json()
+            except Exception:
+                data = None
+            if response.ok and data and "access_token" in data:
+                return True, data
+            else:
+                return False, data
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Refresh token request failed: {str(e)}")
+            return False, {"error": str(e)}
