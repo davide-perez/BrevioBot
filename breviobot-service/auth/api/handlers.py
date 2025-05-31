@@ -54,6 +54,8 @@ def handle_login_request(request_json):
 
 def handle_refresh_token_request(request_json):
     user_id = get_jwt_identity()
+    if not settings.auth.refresh_token_expiry_minutes or settings.auth.refresh_token_expiry_minutes <= 0:
+        raise ValidationError("Refresh token expiry (settings.auth.refresh_token_expiry_minutes) must be set to a positive integer.")
     with SessionLocal() as db:
         repo = UserRepository(db)
         user_db = repo.get(id=user_id)
