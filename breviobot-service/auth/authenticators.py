@@ -31,7 +31,7 @@ class JWTAuthService:
     
     def authenticate_user(self, username: str, password: str):
         with SessionLocal() as db:
-            repo = UserRepository(lambda: db)
+            repo = UserRepository(db)
             user_db = repo.authenticate(username, password)
             if not user_db:
                 logger.warning(f"Login attempt with invalid credentials: {username}")
@@ -49,7 +49,7 @@ def require_auth(f: callable) -> callable:
             return f(*args, **kwargs)
         user_id = get_jwt_identity()
         with SessionLocal() as db:
-            repo = UserRepository(lambda: db)
+            repo = UserRepository(db)
             user_db = repo.get_by_id(user_id)
             if user_db and user_db.is_active:
                 g.current_user = {
