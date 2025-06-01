@@ -9,6 +9,7 @@ from openai import OpenAI
 from calendars.google_handlers import handle_fetch_events
 from toolcalls.prompts import INIT_GOOGLE_CALENDAR_TOOLCALL_PROMPT
 from toolcalls.registry import dispatch_tool_call
+from text.clients import LLMClientFactory
 import json
 
 @dataclass
@@ -30,6 +31,19 @@ class SummarizeRequest:
             language=data.get("language", settings.app.default_language),
             model=data.get("model", settings.app.default_model)
         )
+    
+@dataclass
+class AskRequest:
+    query: str
+    model: str
+
+    @classmethod
+    def from_json(cls, data: dict) -> 'AskRequest':
+        if not data.get("query"):
+            raise ValidationError("Query field is required")
+        if not data.get("model"):
+            raise ValidationError("Model field is required")
+        return cls(query=data["query"], model=data["model"])
 
 def handle_summarize_request(request_json):
     request_data = SummarizeRequest.from_json(request_json or {})
@@ -50,39 +64,36 @@ def handle_summarize_request(request_json):
     return jsonify({"summary": result})
 
 def handle_ask_request(request_json):
-    """
-    Handles a natural language query, sends it to the LLM for tool-call, and dispatches the tool call if present.
-    """
     user_info = f" for user: {g.current_user['username']}" if hasattr(g, 'current_user') else ""
     logger.info(f"Processing ask request{user_info}")
 
-    # 1. Estrarre la query utente
-    query = request_json.get("query")
-    if not query:
-        raise ValidationError("Missing 'query' in request body")
+    request_data = AskRequest.from_json(request_json or {})
 
-    # 2. Inizializzare il prompt per l'LLM
-    prompt = INIT_GOOGLE_CALENDAR_TOOLCALL_PROMPT + f"\nUser query: {query}"
+    system_prompt = INIT_GOOGLE_CALENDAR_TOOLCALL_PROMPT
+    api_key = settings.app.openai_api_key
+    if not api_key:
+        raise ValidationError("OpenAI API key is required for this call")
 
-    # 3. Chiamare il LLM (esempio con OpenAI, da adattare per Ollama se serve)
-    client = OpenAI(api_key=settings.app.openai_api_key)
-    response = client.chat.completions.create(
-        model=settings.app.default_model,
-        messages=[{"role": "system", "content": prompt}],
-        temperature=0
-    )
-    llm_output = response.choices[0].message.content.strip()
-
-    # 4. Estrarre il tool-call dal JSON generato dal LLM
     try:
-        tool_call = json.loads(llm_output)
+        client = LLMClientFactory.create(request_data.model, system_prompt, api_key)
+    except Exception as e:
+        logger.error(f"Failed to create LLM client: {e}", exc_info=True)
+        raise ValidationError(str(e))
+
+    try:
+        response = client.call(request_data.query)
+    except Exception as e:
+        logger.error(f"LLM call failed: {e}", exc_info=True)
+        raise ValidationError("LLM did not return a valid response.")
+
+    try:
+        tool_call = json.loads(response)
         tool_name = tool_call["tool_name"]
         parameters = tool_call["parameters"]
     except Exception as e:
-        logger.error(f"Failed to parse tool-call JSON: {llm_output}", exc_info=True)
+        logger.error(f"Failed to parse tool-call JSON: {response}", exc_info=True)
         raise ValidationError("LLM did not return a valid tool-call JSON.")
 
-    # 5. Dispatch tool-call
     try:
         result = dispatch_tool_call(tool_name, parameters)
     except Exception as e:

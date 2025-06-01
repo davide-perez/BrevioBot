@@ -54,7 +54,7 @@ class Settings:
         
         self.app = AppSettings(
             openai_api_key=os.getenv('BREVIOBOT_OPENAI_API_KEY'),
-            default_model=os.getenv('BREVIOBOT_DEFAULT_MODEL', 'gpt-3.5-turbo'),
+            default_model=os.getenv('BREVIOBOT_DEFAULT_MODEL', ''),
             default_language=os.getenv('BREVIOBOT_DEFAULT_LANGUAGE', 'en'),
             max_input_length=int(os.getenv('BREVIOBOT_MAX_INPUT_LENGTH', '4000')),
             request_timeout=int(os.getenv('BREVIOBOT_REQUEST_TIMEOUT', '30')),

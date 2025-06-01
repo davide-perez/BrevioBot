@@ -1,4 +1,8 @@
+import datetime
+
 # Get Google Calendar events between two dates (OpenAI Function Calling style)
+TODAY = datetime.datetime.utcnow().date()
+
 GET_GOOGLE_CALENDAR_EVENTS_SCHEMA = {
     "name": "get_google_calendar_events",
     "description": "Return all Google Calendar events between the specified start and end dates.",
@@ -22,7 +26,8 @@ GET_GOOGLE_CALENDAR_EVENTS_SCHEMA = {
 
 INIT_GOOGLE_CALENDAR_TOOLCALL_PROMPT = (
     "You are an assistant that helps retrieve events between a start and end date from Google Calendar using structured tool-calls. "
-    "When you receive a natural language request about calendar events, respond only with a JSON object that matches the function schema below, choosing the appropriate function and filling in the required parameters.\n\n"
+    "When you receive a natural language request about calendar events, respond only with a JSON object that matches the function schema below, choosing the appropriate function and filling in the required parameters.\n"
+    f"Today's date is {TODAY}. When interpreting natural language queries involving relative dates (e.g., “next week”), assume this as the current date.\n\n"
     f"Available function:\n{GET_GOOGLE_CALENDAR_EVENTS_SCHEMA}\n\n"
     "Example user request 1:\n"
     "\"Show me the calendar events between June 5 and June 7, 2025\"\n\n"
