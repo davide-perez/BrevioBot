@@ -1,6 +1,7 @@
 from googleapiclient.discovery import build
 from .auth import get_credentials_from_file, get_credentials_from_json
 from core.settings import settings
+from datetime import datetime
 
 
 def get_calendar_service(user_id, creds_path=None, creds_json_string=None):
@@ -16,7 +17,7 @@ def get_calendar_service(user_id, creds_path=None, creds_json_string=None):
     return service
 
 
-def fetch_events(user_id, calendar_id='primary', max_results=10, creds_path=None, creds_json_string=None, time_min=None, time_max=None):
+def fetch_events(user_id, calendar_id='primary', max_results=100, creds_path=None, creds_json_string=None, time_min=None, time_max=None):
     service = get_calendar_service(user_id, creds_path, creds_json_string)
     params = {
         'calendarId': calendar_id,
@@ -24,6 +25,8 @@ def fetch_events(user_id, calendar_id='primary', max_results=10, creds_path=None
         'singleEvents': True,
         'orderBy': 'startTime'
     }
+    params['timeMin'] = time_min if time_min else datetime.utcnow().replace(microsecond=0).isoformat() + 'Z'
+    params['timeMax'] = time_max if time_max else datetime.utcnow().replace(microsecond=0).isoformat() + 'Z'
     if time_min:
         params['timeMin'] = time_min
     if time_max:
