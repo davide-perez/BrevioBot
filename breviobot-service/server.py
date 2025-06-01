@@ -1,7 +1,7 @@
 from auth.routes import auth_bp, auth_limiter
 from stt.routes import stt_bp, stt_limiter
 from text.routes import text_bp, text_limiter
-from calendars.google.routes import calendar_bp, calendar_limiter
+from calendars.google_routes import calendar_bp, calendar_limiter
 from flask import Flask, jsonify
 from flask_cors import CORS
 from core.settings import settings

@@ -1,6 +1,6 @@
 from flask import jsonify, g
 from core.settings import settings
-from calendars.google.client import fetch_events, create_event, delete_event
+from calendars.google_client import fetch_events, create_event, delete_event
 from calendars.utils import parse_date_formula, is_date_formula
 from core.logger import logger
 
@@ -71,7 +71,7 @@ def handle_list_calendars(req):
     creds_path = settings.google_client_secret.credentials_json
     logger.info(f"[Calendar] Listing calendars for user_id={user_id}")
     try:
-        from calendars.google.auth import get_credentials_from_file
+        from calendars.google_auth import get_credentials_from_file
         from googleapiclient.discovery import build
         creds = get_credentials_from_file(user_id, creds_path)
         service = build('calendar', 'v3', credentials=creds)

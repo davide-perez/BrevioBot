@@ -1,5 +1,5 @@
 from googleapiclient.discovery import build
-from .auth import get_credentials_from_file, get_credentials_from_json
+from .google_auth import get_credentials_from_file, get_credentials_from_json
 from core.settings import settings
 from datetime import datetime
 
