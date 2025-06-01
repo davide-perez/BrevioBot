@@ -16,9 +16,19 @@ def get_calendar_service(user_id, creds_path=None, creds_json_string=None):
     return service
 
 
-def fetch_events(user_id, calendar_id='primary', max_results=10, creds_path=None, creds_json_string=None):
+def fetch_events(user_id, calendar_id='primary', max_results=10, creds_path=None, creds_json_string=None, time_min=None, time_max=None):
     service = get_calendar_service(user_id, creds_path, creds_json_string)
-    events_result = service.events().list(calendarId=calendar_id, maxResults=max_results, singleEvents=True, orderBy='startTime').execute()
+    params = {
+        'calendarId': calendar_id,
+        'maxResults': max_results,
+        'singleEvents': True,
+        'orderBy': 'startTime'
+    }
+    if time_min:
+        params['timeMin'] = time_min
+    if time_max:
+        params['timeMax'] = time_max
+    events_result = service.events().list(**params).execute()
     return events_result.get('items', [])
 
 

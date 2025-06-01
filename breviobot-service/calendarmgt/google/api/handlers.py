@@ -6,8 +6,17 @@ def handle_fetch_events(req):
     user_id = g.current_user['user_id']
     calendar_id = req.args.get('calendar_id', 'primary')
     max_results = int(req.args.get('max_results', 10))
+    time_min = req.args.get('time_min')
+    time_max = req.args.get('time_max')
     creds_path = settings.google_client_secret.credentials_json
-    events = fetch_events(user_id, calendar_id=calendar_id, max_results=max_results, creds_path=creds_path)
+    events = fetch_events(
+        user_id,
+        calendar_id=calendar_id,
+        max_results=max_results,
+        creds_path=creds_path,
+        time_min=time_min,
+        time_max=time_max
+    )
     return jsonify({'events': events})
 
 
