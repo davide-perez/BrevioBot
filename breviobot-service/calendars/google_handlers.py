@@ -100,6 +100,7 @@ def handle_list_calendars(req):
 def get_google_calendar_events(start_date: str, end_date: str, calendar_id: str = 'primary', max_results: int = 20):
     """
     Tool-callable function to fetch Google Calendar events for the current user between start_date and end_date.
+    Returns only essential info: summary, start, end, is_recurring, htmlLink.
     """
     user_id = g.current_user['user_id']
     events = fetch_events_for_user(
@@ -109,4 +110,13 @@ def get_google_calendar_events(start_date: str, end_date: str, calendar_id: str 
         calendar_id=calendar_id,
         max_results=max_results
     )
-    return {'events': events}
+    filtered = []
+    for e in events:
+        filtered.append({
+            'summary': e.get('summary'),
+            'date_start': e.get('start', {}).get('dateTime'),
+            'date_end': e.get('end', {}).get('dateTime'),
+            'is_recurring': 'recurringEventId' in e,
+            'htmlLink': e.get('htmlLink')
+        })
+    return {'events': filtered}
