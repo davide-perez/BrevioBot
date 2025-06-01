@@ -6,7 +6,7 @@ from core.exceptions import ValidationError, AuthenticationError
 from auth.authenticators import _jwt_auth_service
 from sqlalchemy.exc import IntegrityError
 from core.email_utils import send_email
-from core.models.users import User
+from core.users import User
 from persistence.repositories import UserRepository
 from persistence.db_session import SessionLocal
 import secrets

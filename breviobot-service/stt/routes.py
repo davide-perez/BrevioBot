@@ -3,7 +3,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from core.settings import settings
 from auth.authenticators import require_auth
-from stt.api.handlers import handle_transcribe_request
+from stt.handlers import handle_transcribe_request
 
 stt_bp = Blueprint("stt", __name__)
 

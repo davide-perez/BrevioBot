@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, g
 from auth.authenticators import require_auth
-from calendarmgt.google.api.handlers import handle_fetch_events, handle_create_event, handle_delete_event, handle_list_calendars
+from calendars.google.handlers import handle_fetch_events, handle_create_event, handle_delete_event, handle_list_calendars
 from core.settings import settings
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address

@@ -3,7 +3,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from core.settings import settings
-from auth.api.handlers import (
+from auth.handlers import (
     handle_create_user_request,
     handle_login_request,
     handle_refresh_token_request, 
