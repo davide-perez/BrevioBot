@@ -1,6 +1,7 @@
-from flask import request, jsonify, g
+from flask import jsonify, g
 from core.settings import settings
 from calendarmgt.google.client import fetch_events, create_event, delete_event
+from calendarmgt.utils import parse_date_formula, is_date_formula
 
 def handle_fetch_events(req):
     user_id = g.current_user['user_id']
@@ -8,6 +9,12 @@ def handle_fetch_events(req):
     max_results = int(req.args.get('max_results', 10))
     time_min = req.args.get('time_min')
     time_max = req.args.get('time_max')
+
+    if is_date_formula(time_min):
+        time_min = parse_date_formula(time_min)
+    if is_date_formula(time_max):
+        time_max = parse_date_formula(time_max)
+
     creds_path = settings.google_client_secret.credentials_json
     events = fetch_events(
         user_id,

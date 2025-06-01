@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, g
 from auth.authenticators import require_auth
-from calendarmgt.google.api.handlers import handle_fetch_events, handle_create_event, handle_delete_event
+from calendarmgt.google.api.handlers import handle_fetch_events, handle_create_event, handle_delete_event, handle_list_calendars
 from core.settings import settings
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -34,5 +34,4 @@ def delete_event(event_id):
 @require_auth
 @calendar_limiter.limit("5 per minute")
 def list_calendars():
-    from calendarmgt.google.api.handlers import handle_list_calendars
     return handle_list_calendars(request)
