@@ -7,6 +7,9 @@ from core.prompts import PROMPTS
 from flask import jsonify, g
 from openai import OpenAI
 from calendars.google_handlers import handle_fetch_events
+from toolcalls.prompts import INIT_GOOGLE_CALENDAR_TOOLCALL_PROMPT
+from toolcalls.registry import dispatch_tool_call
+import json
 
 @dataclass
 class SummarizeRequest:
@@ -47,46 +50,44 @@ def handle_summarize_request(request_json):
     return jsonify({"summary": result})
 
 def handle_ask_request(request_json):
-    text = request_json.get("text")
-    if not text:
-        raise ValidationError("Text field is required")
+    """
+    Handles a natural language query, sends it to the LLM for tool-call, and dispatches the tool call if present.
+    """
     user_info = f" for user: {g.current_user['username']}" if hasattr(g, 'current_user') else ""
-    logger.info(f"Processing ask request{user_info}: {text}")
+    logger.info(f"Processing ask request{user_info}")
 
-    # Prompt per classificare l'intento
-    system_prompt = (
-        "Se la domanda riguarda il calendario (es. eventi, appuntamenti, impegni, riunioni), "
-        "rispondi solo con 'calendar' e indica il periodo (es. 'next week', 'oggi', 'domani', 'dal 1 al 5 giugno'). "
-        "Altrimenti rispondi 'other'.\nDomanda: " + text
-    )
+    # 1. Estrarre la query utente
+    query = request_json.get("query")
+    if not query:
+        raise ValidationError("Missing 'query' in request body")
+
+    # 2. Inizializzare il prompt per l'LLM
+    prompt = INIT_GOOGLE_CALENDAR_TOOLCALL_PROMPT + f"\nUser query: {query}"
+
+    # 3. Chiamare il LLM (esempio con OpenAI, da adattare per Ollama se serve)
     client = OpenAI(api_key=settings.app.openai_api_key)
     response = client.chat.completions.create(
         model=settings.app.default_model,
-        messages=[{"role": "system", "content": system_prompt}],
-        temperature=0.0
+        messages=[{"role": "system", "content": prompt}],
+        temperature=0
     )
-    content = response.choices[0].message.content.strip().lower()
-    if content.startswith("calendar"):
-        # Estrai periodo (es. 'next week', 'oggi', ecc.)
-        import re
-        match = re.search(r"calendar(?:[:\-]?\s*)(.*)", content)
-        period = match.group(1).strip() if match and match.group(1) else ""
-        # Mappa periodo in time_min/time_max (esempio: 'next week' -> time_min/today, time_max/+7D)
-        # Qui esempio semplice: se 'next week' -> time_min='+7D', time_max='+14D'
-        time_min, time_max = None, None
-        if "next week" in period:
-            time_min = "+7D"
-            time_max = "+14D"
-        elif "questa settimana" in period or "this week" in period:
-            time_min = "+0D"
-            time_max = "+7D"
-        elif "oggi" in period or "today" in period:
-            time_min = "+0D"
-            time_max = "+1D"
-        # Altri casi da gestire...
-        # Costruisci una finta request per handle_fetch_events
-        class DummyReq:
-            args = {"time_min": time_min, "time_max": time_max}
-        return handle_fetch_events(DummyReq())
-    else:
-        return jsonify({"result": "Non so come rispondere a questa domanda."})
+    llm_output = response.choices[0].message.content.strip()
+
+    # 4. Estrarre il tool-call dal JSON generato dal LLM
+    try:
+        tool_call = json.loads(llm_output)
+        tool_name = tool_call["tool_name"]
+        parameters = tool_call["parameters"]
+    except Exception as e:
+        logger.error(f"Failed to parse tool-call JSON: {llm_output}", exc_info=True)
+        raise ValidationError("LLM did not return a valid tool-call JSON.")
+
+    # 5. Dispatch tool-call
+    try:
+        result = dispatch_tool_call(tool_name, parameters)
+    except Exception as e:
+        logger.error(f"Tool-call dispatch failed: {e}", exc_info=True)
+        raise ValidationError(f"Tool-call dispatch failed: {e}")
+
+    logger.info(f"Successfully handled ask request{user_info}")
+    return jsonify(result)

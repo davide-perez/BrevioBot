@@ -3,6 +3,20 @@ from core.settings import settings
 from calendars.google_client import fetch_events, create_event, delete_event
 from calendars.utils import parse_date_formula, is_date_formula
 from core.logger import logger
+from toolcalls.registry import register_tool
+
+def fetch_events_for_user(user_id, start_date, end_date, calendar_id='primary', max_results=20):
+    creds_path = settings.google_client_secret.credentials_json
+    events = fetch_events(
+        user_id,
+        calendar_id=calendar_id,
+        max_results=max_results,
+        creds_path=creds_path,
+        time_min=start_date,
+        time_max=end_date
+    )
+    return events
+
 
 def handle_fetch_events(req):
     user_id = g.current_user['user_id']
@@ -20,15 +34,13 @@ def handle_fetch_events(req):
         logger.info(f"[Calendar] Parsing time_max formula: {time_max}")
         time_max = parse_date_formula(time_max)
 
-    creds_path = settings.google_client_secret.credentials_json
     try:
-        events = fetch_events(
+        events = fetch_events_for_user(
             user_id,
+            start_date=time_min,
+            end_date=time_max,
             calendar_id=calendar_id,
-            max_results=max_results,
-            creds_path=creds_path,
-            time_min=time_min,
-            time_max=time_max
+            max_results=max_results
         )
         logger.info(f"[Calendar] Fetched {len(events)} events for user_id={user_id}")
         return jsonify({'events': events})
@@ -82,3 +94,19 @@ def handle_list_calendars(req):
     except Exception as e:
         logger.error(f"[Calendar] Error listing calendars for user_id={user_id}: {e}", exc_info=True)
         raise
+
+
+@register_tool("get_google_calendar_events")
+def get_google_calendar_events(start_date: str, end_date: str, calendar_id: str = 'primary', max_results: int = 20):
+    """
+    Tool-callable function to fetch Google Calendar events for the current user between start_date and end_date.
+    """
+    user_id = g.current_user['user_id']
+    events = fetch_events_for_user(
+        user_id,
+        start_date=start_date,
+        end_date=end_date,
+        calendar_id=calendar_id,
+        max_results=max_results
+    )
+    return {'events': events}
