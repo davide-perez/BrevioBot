@@ -29,3 +29,10 @@ def create_event():
 @calendar_limiter.limit("5 per minute")
 def delete_event(event_id):
     return handle_delete_event(event_id, request)
+
+@calendar_bp.route("/api/calendar/list", methods=["GET"])
+@require_auth
+@calendar_limiter.limit("5 per minute")
+def list_calendars():
+    from calendarmgt.google.api.handlers import handle_list_calendars
+    return handle_list_calendars(request)

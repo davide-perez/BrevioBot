@@ -26,3 +26,15 @@ def handle_delete_event(event_id, req):
     creds_path = settings.google_client_secret.credentials_json
     delete_event(user_id, event_id, calendar_id=calendar_id, creds_path=creds_path)
     return jsonify({'deleted': True})
+
+
+def handle_list_calendars(req):
+    user_id = g.current_user['user_id']
+    creds_path = settings.google_client_secret.credentials_json
+    from calendarmgt.google.auth import get_credentials_from_file
+    from googleapiclient.discovery import build
+    creds = get_credentials_from_file(user_id, creds_path)
+    service = build('calendar', 'v3', credentials=creds)
+    calendars_result = service.calendarList().list().execute()
+    calendars = calendars_result.get('items', [])
+    return jsonify({'calendars': calendars})
