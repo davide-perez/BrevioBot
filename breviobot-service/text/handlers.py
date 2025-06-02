@@ -10,7 +10,12 @@ from calendars.google_handlers import handle_fetch_events
 from toolcalls.prompts import INIT_GOOGLE_CALENDAR_TOOLCALL_PROMPT
 from toolcalls.registry import dispatch_tool_call
 from text.clients import LLMClientFactory
+from text.calendar_agent import CALENDAR_AGENT_PROMPT, CalendarEntry, get_google_calendar_events
+from agents import Runner
+from pydantic import BaseModel
+from agents import Agent, Runner, function_tool
 import json
+import asyncio
 
 @dataclass
 class SummarizeRequest:
@@ -64,6 +69,35 @@ def handle_summarize_request(request_json):
     return jsonify({"summary": result})
 
 def handle_ask_request(request_json):
+    user_info = f" for user: {g.current_user['username']}" if hasattr(g, 'current_user') else ""
+    logger.info(f"Processing ask request{user_info}")
+
+    request_data = AskRequest.from_json(request_json or {})
+
+    api_key = settings.app.openai_api_key
+    if not api_key:
+        raise ValidationError("OpenAI API key is required for this call")
+
+    try:
+        agent = Agent(
+            name="Calendar Agent",
+            handoff_description="An agent that manages calendar events using Google Calendar.",
+            instructions=CALENDAR_AGENT_PROMPT,
+            model=request_data.model,
+            tools=[get_google_calendar_events],
+            output_type=CalendarEntry
+        )
+        result = asyncio.run(Runner.run(agent, request_data.query))
+    except Exception as e:
+        logger.error(f"Failed to create LLM client: {e}", exc_info=True)
+        raise ValidationError(str(e))
+
+    logger.info(f"Successfully handled ask request{user_info}")
+    # Convert CalendarEntry to dict for JSON serialization
+    return jsonify({"message": result.final_output.dict()})
+
+
+def handle_ask_request_old(request_json):
     user_info = f" for user: {g.current_user['username']}" if hasattr(g, 'current_user') else ""
     logger.info(f"Processing ask request{user_info}")
 

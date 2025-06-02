@@ -14,6 +14,9 @@ from core.api_utils import (
 from core.exceptions import AuthenticationError
 from flask_jwt_extended import JWTManager
 from datetime import timedelta
+import os
+
+os.environ["OPENAI_API_KEY"] = settings.app.openai_api_key
 
 if __name__ == "__main__":
     app = Flask(__name__)
