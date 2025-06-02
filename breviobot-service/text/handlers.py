@@ -6,10 +6,6 @@ from text.summarizers import TextSummarizer
 from core.prompts import PROMPTS
 from flask import jsonify, g
 from openai import OpenAI
-from calendars.google_handlers import handle_fetch_events
-from toolcalls.prompts import INIT_GOOGLE_CALENDAR_TOOLCALL_PROMPT
-from toolcalls.registry import dispatch_tool_call
-from text.clients import LLMClientFactory
 from text.calendar_agent import CALENDAR_AGENT_PROMPT, CalendarEntry, get_google_calendar_events
 from agents import Runner
 from pydantic import BaseModel
@@ -95,44 +91,3 @@ def handle_ask_request(request_json):
     logger.info(f"Successfully handled ask request{user_info}")
     # Convert CalendarEntry to dict for JSON serialization
     return jsonify({"message": result.final_output.dict()})
-
-
-def handle_ask_request_old(request_json):
-    user_info = f" for user: {g.current_user['username']}" if hasattr(g, 'current_user') else ""
-    logger.info(f"Processing ask request{user_info}")
-
-    request_data = AskRequest.from_json(request_json or {})
-
-    system_prompt = INIT_GOOGLE_CALENDAR_TOOLCALL_PROMPT
-    api_key = settings.app.openai_api_key
-    if not api_key:
-        raise ValidationError("OpenAI API key is required for this call")
-
-    try:
-        client = LLMClientFactory.create(request_data.model, system_prompt, api_key)
-    except Exception as e:
-        logger.error(f"Failed to create LLM client: {e}", exc_info=True)
-        raise ValidationError(str(e))
-
-    try:
-        response = client.call(request_data.query)
-    except Exception as e:
-        logger.error(f"LLM call failed: {e}", exc_info=True)
-        raise ValidationError("LLM did not return a valid response.")
-
-    try:
-        tool_call = json.loads(response)
-        tool_name = tool_call["tool_name"]
-        parameters = tool_call["parameters"]
-    except Exception as e:
-        logger.error(f"Failed to parse tool-call JSON: {response}", exc_info=True)
-        raise ValidationError("LLM did not return a valid tool-call JSON.")
-
-    try:
-        result = dispatch_tool_call(tool_name, parameters)
-    except Exception as e:
-        logger.error(f"Tool-call dispatch failed: {e}", exc_info=True)
-        raise ValidationError(f"Tool-call dispatch failed: {e}")
-
-    logger.info(f"Successfully handled ask request{user_info}")
-    return jsonify(result)

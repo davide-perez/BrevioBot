@@ -3,7 +3,6 @@ from core.settings import settings
 from calendars.google_client import fetch_events, create_event, delete_event
 from calendars.utils import parse_date_formula, is_date_formula
 from core.logger import logger
-from toolcalls.registry import register_tool
 
 def fetch_events_for_user(user_id, start_date, end_date, calendar_id='primary', max_results=20):
     creds_path = settings.google_client_secret.credentials_json
@@ -94,29 +93,3 @@ def handle_list_calendars(req):
     except Exception as e:
         logger.error(f"[Calendar] Error listing calendars for user_id={user_id}: {e}", exc_info=True)
         raise
-
-
-@register_tool("get_google_calendar_events")
-def get_google_calendar_events(start_date: str, end_date: str, calendar_id: str = 'primary', max_results: int = 20):
-    """
-    Tool-callable function to fetch Google Calendar events for the current user between start_date and end_date.
-    Returns only essential info: summary, start, end, is_recurring, htmlLink.
-    """
-    user_id = g.current_user['user_id']
-    events = fetch_events_for_user(
-        user_id,
-        start_date=start_date,
-        end_date=end_date,
-        calendar_id=calendar_id,
-        max_results=max_results
-    )
-    filtered = []
-    for e in events:
-        filtered.append({
-            'summary': e.get('summary'),
-            'date_start': e.get('start', {}).get('dateTime'),
-            'date_end': e.get('end', {}).get('dateTime'),
-            'is_recurring': 'recurringEventId' in e,
-            'htmlLink': e.get('htmlLink')
-        })
-    return {'events': filtered}

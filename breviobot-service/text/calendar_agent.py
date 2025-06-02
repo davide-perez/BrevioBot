@@ -4,6 +4,7 @@ import json
 from agents import Agent, Runner, function_tool
 from flask import g
 from calendars.google_handlers import fetch_events_for_user
+from core.logger import logger
 
 CALENDAR_AGENT_PROMPT = (
     "You are an intelligent assistant for calendar event management. "
@@ -35,21 +36,27 @@ def get_google_calendar_events(start_date: str, end_date: str) -> str:
     Tool-callable function to fetch Google Calendar events for the current user between start_date and end_date.
     Returns only essential info: summary, start, end, is_recurring, htmlLink.
     """
-    user_id = g.current_user['user_id']
-    events = fetch_events_for_user(
-        user_id,
-        start_date=start_date,
-        end_date=end_date,
-        calendar_id='primary',
-        max_results=50
-    )
-    filtered = []
-    for e in events:
-        filtered.append({
-            'summary': e.get('summary'),
-            'starting_date': e.get('start', {}).get('dateTime'),
-            'ending_date': e.get('end', {}).get('dateTime'),
-            'is_recurring': 'recurringEventId' in e,
-            'html_link': e.get('htmlLink')
+    try:
+        user_id = g.current_user['user_id']
+        events = fetch_events_for_user(
+            user_id,
+            start_date=start_date,
+            end_date=end_date,
+            calendar_id='primary',
+            max_results=50
+        )
+        filtered = []
+        for e in events:
+            filtered.append({
+                'summary': e.get('summary'),
+                'starting_date': e.get('start', {}).get('dateTime'),
+                'ending_date': e.get('end', {}).get('dateTime'),
+                'is_recurring': 'recurringEventId' in e,
+                'html_link': e.get('htmlLink')
+            })
+        return json.dumps({'events': filtered})
+    except Exception as ex:
+        logger.error(f"Error in get_google_calendar_events: {ex}", exc_info=True)
+        return json.dumps({
+            'error': 'Failed to fetch calendar events. Please check your Google Calendar settings or permissions.'
         })
-    return json.dumps({'events': filtered})
