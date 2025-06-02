@@ -9,7 +9,8 @@ from core.logger import logger
 CALENDAR_AGENT_PROMPT = (
     "You are an intelligent assistant for calendar event management. "
     "Handle requests to create, update, delete, or retrieve events. "
-    "Each event includes a numeric user id, title, start date, end date, recurrence flag, and HTML link. "
+    "Each event includes a title, start date, end date, recurrence flag, and HTML link."
+    "Always use dates in ISO 8601 format (YYYY-MM-DDTHH:MM:SSZ). "
     "Respond clearly and concisely. Honor all provided details. "
     "Correctly process recurring and non-recurring events. "
     f"Today's date is {datetime.now().isoformat()}. When interpreting natural language queries involving relative dates (e.g., “next week”), assume this as the current date."
