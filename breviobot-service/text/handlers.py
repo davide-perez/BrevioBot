@@ -6,7 +6,7 @@ from text.summarizers import TextSummarizer
 from core.prompts import PROMPTS
 from flask import jsonify, g
 from openai import OpenAI
-from text.calendar_agent import CALENDAR_AGENT_PROMPT, CalendarEntry, get_google_calendar_events
+from text.calendar_agent import CALENDAR_AGENT_PROMPT, CalendarQueryResult, get_google_calendar_events
 from agents import Runner
 from pydantic import BaseModel
 from agents import Agent, Runner, function_tool
@@ -54,6 +54,8 @@ def handle_summarize_request(request_json):
     user_info = f" for user: {g.current_user['username']}" if hasattr(g, 'current_user') else ""
     logger.info(f"Processing summarization request{user_info} for language: {request_data.language}, model: {request_data.model}")
     
+    if not settings.app.openai_api_key:
+        raise ValidationError("OpenAI API key is required for this call")
     summarizer = TextSummarizer(settings.app.openai_api_key, PROMPTS)
     result = summarizer.summarize_text(
         request_data.text,
@@ -81,7 +83,7 @@ def handle_ask_request(request_json):
             instructions=CALENDAR_AGENT_PROMPT,
             model=request_data.model,
             tools=[get_google_calendar_events],
-            output_type=CalendarEntry
+            output_type=CalendarQueryResult
         )
         result = asyncio.run(Runner.run(agent, request_data.query))
     except Exception as e:

@@ -1,3 +1,4 @@
+from typing import List
 from pydantic import BaseModel, Field
 from datetime import datetime
 import json
@@ -11,31 +12,28 @@ CALENDAR_AGENT_PROMPT = (
     "Handle requests to create, update, delete, or retrieve events. "
     "Each event includes a title, start date, end date, recurrence flag, and HTML link."
     "Always use dates in ISO 8601 format (YYYY-MM-DDTHH:MM:SSZ). "
-    "Respond clearly and concisely. Honor all provided details. "
-    "Correctly process recurring and non-recurring events. "
+    "Respond clearly and concisely, yet informally. Include the summary of the fetched events."
     f"Today's date is {datetime.now().isoformat()}. When interpreting natural language queries involving relative dates (e.g., “next week”), assume this as the current date."
     "Request any missing information needed to complete the operation."
 )
 
-class CalendarEntry(BaseModel):
+class CalendarQueryResult(BaseModel):
     """
-    Represents a calendar entry with a summary, start date, and end date.
+    Represents a result of a calendar query.
     """
-    summary: str = Field(description="The description or title of the calendar entry")
-    starting_date: datetime = Field(description="The start date of the calendar entry")
-    ending_date: datetime = Field(description="The end date of the calendar entry")
-    is_recurring: bool = Field(description="Whether the event is recurring")
-    html_link: str = Field(description="A link to the event in a calendar application")
+    summary: str = Field(description="A description of all the events fetched from the calendar")
+    events: List[str] = Field(description="List of events associated with the calendar query")
+    from_date: datetime = Field(description="The start date of the calendar query")
+    to_date: datetime = Field(description="The end date of the calendar query")
 
     def __str__(self):
-        return f"{self.summary} from {self.starting_date} to {self.ending_date}"
+        return f"{self.summary} from {self.from_date} to {self.to_date}"
 
 
-@function_tool("get_google_calendar_events")
+@function_tool
 def get_google_calendar_events(start_date: str, end_date: str) -> str:
     """
     Tool-callable function to fetch Google Calendar events for the current user between start_date and end_date.
-    Returns only essential info: summary, start, end, is_recurring, htmlLink.
     """
     try:
         user_id = g.current_user['user_id']
